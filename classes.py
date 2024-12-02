@@ -1,12 +1,10 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
+from datetime import datetime
 import os, h5py, re, numpy, torch, math, statistics
 
 class Dataset:
-    def __init__(self, url=str):
-        self.url = url
-
     @classmethod
     def read_hdf5(cls, hpath=str, mode='tree', key='/'):
         if re.search(r'\..+', hpath).group()[1:] == 'hdf5':
@@ -57,6 +55,9 @@ class Embedding:
         self.embeddings = {}
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
+
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.to(device)
 
     def embed(self):
         for txt in self.text:
@@ -109,31 +110,37 @@ class Embedding:
                     g.create_dataset(name=sw, data=self.embeddings[sw])
 
 class Cluster:
-    def __init__(self, embpath=str, name=str):
+    def __init__(self, embpath=str):
         self.dbscan = []
-        self.embeddings = []
+        self.embpath = embpath
         with h5py.File(embpath, 'r') as h:
-            try:
-                g = h[name]
-                for key in g.keys():
-                    self.embeddings.append(g[key][:])
-            except:
-                self.embeddings.append(h[name][:])
+            self.langs = h.keys()
 
-    def cluster(self, min=2, pca=False, e=0.5, range=0.5, ratio=0.1):
-        for emb in self.embeddings:
-            if len(emb) >= min:
-                if pca:
-                    pca = PCA()
-                    emb = pca.fit_transform(emb)
-                    index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
-                    emb = emb[:index]
+    def cluster(self, lang, min=2, pca=False, epsilon=0.5, range=0.5, ratio=0.1):
+        with h5py.File(self.embpath, 'r') as h:
+            for sw in h[lang].keys():
+                emb = h[lang][sw][:]
 
-                dbscan = numpy.full(len(emb), -1)
-                while int(len(emb)*ratio) <= numpy.sum(dbscan==-1):
-                    dbscan = DBSCAN(eps=e, min_samples=min, metric='euclidean').fit_predict(emb)
-                    e += range
-                self.dbscan.append(dbscan)
+                if len(emb) >= min:
+                    if pca:
+                        pca = PCA()
+                        emb = pca.fit_transform(emb)
+                        index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
+                        emb = emb[:index]
+
+                    now_clst = -1
+                    pre_clst = -1
+                    best_dbscan = numpy.full(len(emb), -1)
+                    e = epsilon
+
+                    while now_clst >= pre_clst:
+                        dbscan = DBSCAN(eps=e, min_samples=min, metric='euclidean').fit_predict(emb)
+                        now_clst = max(dbscan)
+                        if now_clst >= pre_clst:
+                            best_dbscan = dbscan
+                            pre_clst = max(best_dbscan)
+                        e += range
+                    self.dbscan.append(best_dbscan)
 
     def entropy(self):
         list_entropy = []

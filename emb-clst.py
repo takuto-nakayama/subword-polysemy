@@ -1,7 +1,7 @@
 from classes import Dataset, Embedding, Cluster
 from datetime import datetime
 from plotly import express as px
-import argparse, pandas as pd
+import argparse, h5py, pandas as pd
 
 if __name__ == '__main__':
     #input arguments
@@ -16,13 +16,14 @@ if __name__ == '__main__':
 
     clst = Cluster(embpath=path)
     dict_entropy = {}
-    for lang in clst.langs:
-        start = datetime.now()
-        clst.cluster(lang)
-        dict_entropy[lang] = clst.entropy()
-        end = datetime.now()
-        time = end - start
-        print(f'{lang} is done. ({time.seconds} seconds.)')
+    with h5py.File(path, 'r') as h:
+        for lang in h.keys():
+            start = datetime.now()
+            clst.cluster(lang)
+            dict_entropy[lang] = clst.entropy()
+            end = datetime.now()
+            time = end - start
+            print(f'{lang} is done. ({time.seconds} seconds.)')
     
     d = {'language': dict_entropy.keys(), 'entropy': dict_entropy.values()}
     df = pd.DataFrame(d)

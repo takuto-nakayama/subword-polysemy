@@ -113,8 +113,6 @@ class Cluster:
     def __init__(self, embpath=str):
         self.dbscan = []
         self.embpath = embpath
-        with h5py.File(embpath, 'r') as h:
-            self.langs = h.keys()
 
     def cluster(self, lang, min=2, pca=False, epsilon=0.5, range=0.5, ratio=0.1):
         with h5py.File(self.embpath, 'r') as h:

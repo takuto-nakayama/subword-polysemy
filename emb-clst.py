@@ -3,7 +3,7 @@ from datetime import datetime
 from plotly import express as px
 import argparse, pandas as pd
 
-if __name__ == 'emb-clst':
+if __name__ == '__main__':
     #input arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('path', type=str, help='the file path must be ".hdf5"')

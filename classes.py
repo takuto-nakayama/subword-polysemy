@@ -110,7 +110,7 @@ class Cluster:
     def __init__(self, embebbing=numpy.array):
         self.dbscan = []
 
-    def cluster(self, min=2, pca=False, e=0.5, range=0.5, ratio=0.1):
+    def cluster(self, min=2, pca=False, e=0.5, range=0.5, git=0.1):
         for emb in self.embeddings:
             if len(emb) >= min:
                 if pca:

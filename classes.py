@@ -25,7 +25,7 @@ class Dataset:
             else:
                 print('Mode Error: "mode" argument should be "tree", "keys", or "dataset".')
         else:
-            print('Extenshion Error: This method can handle only ".".hdf5".')
+            print('Extenshion Error: This method can handle only ".hdf5".')
 
     def to_hdf5(self, name=str, data=None):
         if '/' not in self.path:

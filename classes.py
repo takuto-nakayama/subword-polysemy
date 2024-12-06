@@ -4,48 +4,46 @@ from sklearn.decomposition import PCA
 import os, h5py, re, numpy, torch, math, statistics
 
 class Dataset:
-    def __init__(self, url=str):
-        self.url = url
+    def __init__(self, path):
+        self.path = path
 
-    @classmethod
-    def read_hdf5(cls, hpath=str, mode='tree', key='/'):
-        if re.search(r'\..+', hpath).group()[1:] == 'hdf5':
+    def read_hdf5(cls, mode='tree', key='/'):
+        if re.search(r'\..+', self.path).group()[1:] == 'hdf5':
             if mode == 'tree':
-                with h5py.File(hpath, 'r') as h:
+                with h5py.File(self.path, 'r') as h:
                     print("HDF5 File Structure:")
                     h.visititems(lambda name, obj: print(
                         f"{'  ' * name.count('/')}[{'Group' if isinstance(obj, h5py.Group) else 'Dataset'}] {name}" +
                             (f", shape: {obj.shape}, dtype: {obj.dtype}" if isinstance(obj, h5py.Dataset) else "")
                     ))
             elif mode == 'keys':
-                with h5py.File(hpath, 'r') as h:
+                with h5py.File(self.path, 'r') as h:
                     return list(h[key].keys())
             elif mode == 'dataset':
-                with h5py.File(hpath, 'r') as h:
+                with h5py.File(self.path, 'r') as h:
                     return numpy.array([i.decode('utf-8') for i in h[key][:]])
             else:
                 print('Mode Error: "mode" argument should be "tree", "keys", or "dataset".')
         else:
             print('Extenshion Error: This method can handle only ".".hdf5".')
 
-    @classmethod
-    def to_hdf5(cls, hpath=str, name=str, data=None):
-        if '/' not in hpath:
-            hfile = hpath
+    def to_hdf5(cls, name=str, data=None):
+        if '/' not in self.path:
+            hfile = self.path
             hdir = os.listdir(os.getcwd())
         else:
-            match = re.search(r'(.+?\..+?/)(.+)', hpath[::-1])
+            match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
             hfile = match.group(1)
             hdir = os.listdir(match.group(2))
 
         if hfile not in hdir:
-            with h5py.File(hpath, 'w') as h:
+            with h5py.File(self.path, 'w') as h:
                 if data:
                     h.create_dataset(name=name, data=data)
                 else:
                     h.create_group(name=name)
         else:
-            with h5py.File(hpath, 'a') as h:
+            with h5py.File(self.paths, 'a') as h:
                 if data:
                     h.create_dataset(name=name, data=data)
                 else:
@@ -109,16 +107,8 @@ class Embedding:
                     g.create_dataset(name=sw, data=self.embeddings[sw])
 
 class Cluster:
-    def __init__(self, embpath=str, name=str):
+    def __init__(self, embebbing=numpy.array):
         self.dbscan = []
-        self.embeddings = []
-        with h5py.File(embpath, 'r') as h:
-            try:
-                g = h[name]
-                for key in g.keys():
-                    self.embeddings.append(g[key][:])
-            except:
-                self.embeddings.append(h[name][:])
 
     def cluster(self, min=2, pca=False, e=0.5, range=0.5, ratio=0.1):
         for emb in self.embeddings:

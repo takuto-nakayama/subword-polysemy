@@ -8,7 +8,7 @@ class Dataset:
         self.path = path
 
     def read_hdf5(self, mode='tree', key='/'):
-        if re.search(r'\..+', self.path).group()[1:] == 'hdf5':
+        try:
             if mode == 'tree':
                 with h5py.File(self.path, 'r') as h:
                     print("HDF5 File Structure:")
@@ -24,8 +24,10 @@ class Dataset:
                     return numpy.array([i.decode('utf-8') for i in h[key][:]])
             else:
                 print('Mode Error: "mode" argument should be "tree", "keys", or "dataset".')
-        else:
-            print('Extenshion Error: This method can handle only ".hdf5".')
+        except KeyError:
+            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
+        except Exception as e:
+            print(f'Error: {e}')            
 
     def to_hdf5(self, name=str, data=None):
         if '/' not in self.path:

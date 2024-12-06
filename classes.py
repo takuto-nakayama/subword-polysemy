@@ -7,7 +7,7 @@ class Dataset:
     def __init__(self, path):
         self.path = path
 
-    def read_hdf5(cls, mode='tree', key='/'):
+    def read_hdf5(self, mode='tree', key='/'):
         if re.search(r'\..+', self.path).group()[1:] == 'hdf5':
             if mode == 'tree':
                 with h5py.File(self.path, 'r') as h:
@@ -27,7 +27,7 @@ class Dataset:
         else:
             print('Extenshion Error: This method can handle only ".".hdf5".')
 
-    def to_hdf5(cls, name=str, data=None):
+    def to_hdf5(self, name=str, data=None):
         if '/' not in self.path:
             hfile = self.path
             hdir = os.listdir(os.getcwd())

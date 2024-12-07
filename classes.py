@@ -6,6 +6,15 @@ import os, h5py, re, numpy, torch, math, statistics
 class Dataset:
     def __init__(self, path):
         self.path = path
+        if '/' not in self.path:
+            self.hfile = self.path
+            self.hdir = os.listdir(os.getcwd())
+        else:
+            match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
+            self.hfile = match.group(1)[:-1][::-1]
+            self.hdir = match.group(2)[::-1]
+        if self.hfile not in os.listdir(self.hdir):
+            print('Error: No such file in the directory')
 
     def read_hdf5(self, mode='tree', key='/'):
         try:
@@ -30,15 +39,7 @@ class Dataset:
             print(f'Error: {e}')            
 
     def to_hdf5(self, name=str, data=None):
-        if '/' not in self.path:
-            hfile = self.path
-            hdir = os.listdir(os.getcwd())
-        else:
-            match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
-            hfile = match.group(1)
-            hdir = os.listdir(match.group(2))
-
-        if hfile not in hdir:
+        if self.hfile not in os.listdir(self.hdir):
             with h5py.File(self.path, 'w') as h:
                 if data:
                     h.create_dataset(name=name, data=data)

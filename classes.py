@@ -104,7 +104,7 @@ class Embedding:
                         else:
                             self.embeddings[sw].append(emb)
     
-    def savevec(self, path:str, name:str):
+    def save_vector(self, path:str, name:str):
         # identify the directory and the file
         if '/' not in path:
             hfile = path
@@ -127,12 +127,13 @@ class Embedding:
 
 class Cluster:
     def __init__(self, embedding=numpy.ndarray):
-        self.dbscan = []
+        self.dbscan = {}
+        self.entropies = {}
         self.embedding = embedding
 
-    def cluster(self, min=2, pca=False, e=0.5, dif=0.5, git=0.1):
+    def cluster(self, min=2, pca=False, e=0.5, dif=0.5):
         # emb corresponds to a set of embeddings of each subword
-        for emb in self.embeddings:
+        for sw, emb in self.embeddings.items():
             if len(emb) >= min:
                 # pca version
                 if pca:
@@ -147,18 +148,39 @@ class Cluster:
                     best_dbscan = dbscan
                     e += dif
                     dbscan = DBSCAN(eps=e, min_samples=min, metric='euclidean').fit_predict(emb)
-                self.dbscan.append(best_dbscan)
+                self.dbscan[sw] = best_dbscan
+    
+    def save_cluster(self, path:str, name:str):
+        # identify the directory and the file
+        if '/' not in path:
+            hfile = path
+            hdir = os.listdir(os.getcwd())
+        else:
+            match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
+            hfile = match.group(1)[:-1][::-1]
+            hdir = os.listdir(match.group(2))[::-1]
+        # save clusters
+        if hfile not in hdir:
+            with h5py.File(path, 'w') as h:
+                g = h.create_group(name=name)
+                for sw in self.dbscan:
+                    g.create_dataset(name=sw, data=self.dbscan[sw])
+        else:
+            with h5py.File(path, 'a') as h:
+                g = h.create_group(name=name)
+                for sw in self.dbscan:
+                    g.create_dataset(name=sw, data=self.dbscan[sw])
 
     def entropy(self):
-        list_entropy = []
+        self.entropy = {}
         # dbs corresponds to clusters for each subword
-        for dbs in self.dbscan:
+        for sw, dbs in self.dbscan.items():
             list_num = []
             # list_num contains the number of how many are in each cluster
             for i in range(0, max(dbs)+1):
                 list_num.append(numpy.sum(dbs==i))
             # list_entropy contains the entropy of each subword
             for i in list_num:
-                list_entropy.append(-(i / len(dbs)) * math.log(i / len(dbs), 2))
-        # the mean of the entropies is the average entropy of each subword
-        return statistics.mean(list_entropy)
+                self.entropy[sw] = -(i / len(dbs)) * math.log(i / len(dbs), 2)
+        # the mean of the entropies is the average entropy of each subword in a language
+        return statistics.mean(self.entropy.values())

@@ -5,7 +5,9 @@ import os, h5py, re, numpy, torch, math, statistics
 
 class Dataset:
     def __init__(self, path):
+        # path of a hdf5 file
         self.path = path
+        # path is divided into file and directory name
         if '/' not in self.path:
             self.hfile = self.path
             self.hdir = os.listdir(os.getcwd())
@@ -13,44 +15,49 @@ class Dataset:
             match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
             self.hfile = match.group(1)[:-1][::-1]
             self.hdir = match.group(2)[::-1]
+        # error messages and others
         if self.hfile not in os.listdir(self.hdir):
             print('Error: No such file in the directory')
+        if self.hfile[self.hfile.idnex('.'):] != '.hdf5':
+            print('Error: This class can cope with only ".hdf5"')
 
-    def read_hdf5(self, mode='tree', key='/'):
+    def tree(self):
+        with h5py.File(self.path, 'r') as h:
+            print("HDF5 File Structure:")
+            h.visititems(lambda name, obj: print(
+                f"{'  ' * name.count('/')}[{'Group' if isinstance(obj, h5py.Group) else 'Dataset'}] {name}" +
+                    (f", shape: {obj.shape}, dtype: {obj.dtype}" if isinstance(obj, h5py.Dataset) else "")
+            ))
+
+    def keys(self, key='/'):
         try:
-            if mode == 'tree':
-                with h5py.File(self.path, 'r') as h:
-                    print("HDF5 File Structure:")
-                    h.visititems(lambda name, obj: print(
-                        f"{'  ' * name.count('/')}[{'Group' if isinstance(obj, h5py.Group) else 'Dataset'}] {name}" +
-                            (f", shape: {obj.shape}, dtype: {obj.dtype}" if isinstance(obj, h5py.Dataset) else "")
-                    ))
-            elif mode == 'keys':
-                with h5py.File(self.path, 'r') as h:
-                    return list(h[key].keys())
-            elif mode == 'dataset':
-                with h5py.File(self.path, 'r') as h:
-                    return numpy.array([i.decode('utf-8') for i in h[key][:]])
-            else:
-                print('Mode Error: "mode" argument should be "tree", "keys", or "dataset".')
+            with h5py.File(self.path, 'r') as h:
+                return list(h[key].keys())
+        except KeyError:
+            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
+        except Exception as e:
+            print(f'Error: {e}')            
+    
+    def dataset(self, key='/'):
+        try:
+            with h5py.File(self.path, 'r') as h:
+                return numpy.array([i.decode('utf-8') for i in h[key][:]])
         except KeyError:
             print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
         except Exception as e:
             print(f'Error: {e}')            
 
-    def to_hdf5(self, name=str, data=None):
-        if self.hfile not in os.listdir(self.hdir):
-            with h5py.File(self.path, 'w') as h:
-                if data:
-                    h.create_dataset(name=name, data=data)
-                else:
-                    h.create_group(name=name)
+    def write(self, name=str, data=None):
+        if name and data:
+            with h5py.File(self.path, 'a') as h:
+                h.create_dataset(name=name, data=data)
+        elif name:
+            with h5py.File(self.path, 'a') as h:
+                h.create_group(name=name)
+        elif data:
+            print('Error: Group name or dataset name is required')
         else:
-            with h5py.File(self.paths, 'a') as h:
-                if data:
-                    h.create_dataset(name=name, data=data)
-                else:
-                    h.create_group(name=name)
+            print('Error: Something is wrong in arguments')
  
 class Embedding:
     def __init__(self, text=numpy.array, model='bert-base-multilingual-cased', tokenizer='bert-base-multilingual-cased'):

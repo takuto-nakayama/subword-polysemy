@@ -18,7 +18,7 @@ class Dataset:
         # error messages and others
         if self.hfile not in os.listdir(self.hdir):
             print('Error: No such file in the directory')
-        if self.hfile[self.hfile.idnex('.'):] != '.hdf5':
+        if self.hfile[self.hfile.index('.'):] != '.hdf5':
             print('Error: This class can cope with only ".hdf5"')
 
     def tree(self):

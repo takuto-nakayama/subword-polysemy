@@ -9,6 +9,7 @@ if __name__ == '__main__':
     parser.add_argument('path', type=str, help='the file path must be ".hdf5"')
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', default=True, type=bool)
+    parser.add_argument('--embed_ready', default=False, type=bool)
     parser.add_argument('--save_vector', default=False, type=bool)
     parser.add_argument('--save_cluster', default=False, type=bool)
     parser.add_argument('--save_entropy', default=True, type=bool)
@@ -19,6 +20,7 @@ if __name__ == '__main__':
     id = args.id
     # optional arguments
     gpu = args.gpu
+    embed_ready = args.embed_ready
     save_vector = args.save_vector
     save_cluster = args.save_cluster
     save_entropy = args.save_entropy
@@ -30,13 +32,16 @@ if __name__ == '__main__':
     
     for lang in data.keys():
         start = datetime.now() # starting time
+        if embed_ready == False:
+            emb = Embedding(data.dataset(key=lang)) # embedding obj
+            emb.embed(gpu=gpu) # embed the text
+            if save_vector:
+                emb.save_vector(path=f'result/embedding-{id}.hdf5', name=lang)
+            clst = Cluster(emb.embeddings) # cluster obj
+        
+        else: # cluster obj has an existing embedding file directly
+            clst = Cluster(data)
 
-        emb = Embedding(data.dataset(key=lang)) # embedding obj
-        emb.embed(gpu=gpu) # embed the text
-        if save_vector:
-            emb.save_vector(path=f'result/embedding-{id}.hdf5', name=lang)
-
-        clst = Cluster(emb.embeddings) # cluster obj
         clst.cluster() # cluster the embeddings
         if save_cluster:
             clst.save_cluster(path=f'result/dbscan-{lang}.hdf5', name=lang)

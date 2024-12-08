@@ -50,7 +50,7 @@ if __name__ == '__main__':
         dict_entropy[lang] = clst.entropy() # calculate entropies
         end = datetime.now() # ending time
         time_ent = end - start_ent
-        print(f'{lang}: Entropy is done. ({time_ent.seconds} seconds.)')
+        print(f'{lang}: Entropy is done -> {dict_entropy[lang]}. ({time_ent.seconds} seconds.)')
 
         # output amount of processing time        
         time = end - start

@@ -127,10 +127,10 @@ class Embedding:
                     g.create_dataset(name=sw, data=self.embeddings[sw])
 
 class Cluster:
-    def __init__(self, embedding=numpy.ndarray):
+    def __init__(self, embeddings=numpy.ndarray):
         self.dbscan = {}
         self.entropies = {}
-        self.embedding = embedding
+        self.embeddings = embeddings
 
     def cluster(self, min=2, pca=False, e=0.5, dif=0.5):
         # emb corresponds to a set of embeddings of each subword

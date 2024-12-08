@@ -70,6 +70,7 @@ class Embedding:
         if gpu:
             # CPU -> GPU
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.model = self.model.to(device)
             print(f"Using device: {device}")
             # txt corresponds to a sentence
             for txt in self.text:       

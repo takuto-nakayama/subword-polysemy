@@ -46,7 +46,7 @@ if __name__ == '__main__':
         if save_cluster:
             clst.save_cluster(path=f'result/dbscan-{lang}.hdf5', name=lang)
         dict_entropy[lang] = clst.entropy() # calculate entropies
-        
+            
         end = datetime.now() # ending time
         time = end - start
         
@@ -58,5 +58,6 @@ if __name__ == '__main__':
     df = pd.DataFrame(d)
     fig = px.scatter(df, x = 'language', y = 'entropy')
     if save_entropy:
+        df.to_csv(f'result/{id}/entropy-{id}.csv', index=False)
         fig.write_html(f'graph-{id}.html')
     fig.show()

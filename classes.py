@@ -182,11 +182,12 @@ class Cluster:
         # dbs corresponds to clusters for each subword
         for sw, dbs in self.dbscan.items():
             list_num = []
+            num_minus = numpy.sum(dbs==-1)
             # list_num contains the number of how many are in each cluster
             for i in range(0, max(dbs)+1):
                 list_num.append(numpy.sum(dbs==i))
             # list_entropy contains the entropy of each subword
             for i in list_num:
-                self.entropy[sw] = -(i / len(dbs)) * math.log(i / len(dbs), 2)
+                self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)
         # the mean of the entropies is the average entropy of each subword in a language
         return statistics.mean(self.entropy.values())

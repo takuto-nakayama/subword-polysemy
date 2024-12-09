@@ -13,7 +13,7 @@ class Dataset:
             self.hdir = os.listdir(os.getcwd())
         else:
             match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
-            self.hfile = match.group(1)[:-1][::-1]
+            self.hfile = match.group(1)[:-1][:-1]
             self.hdir = match.group(2)[::-1]
         # error messages and others
         if self.hfile not in os.listdir(self.hdir):
@@ -163,10 +163,10 @@ class Cluster:
             hdir = os.listdir(os.getcwd())
         else:
             match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
-            hfile = match.group(1)[:-1][::-1]
-            hdir = os.listdir(match.group(2)[::-1])
+            hfile = match.group(1)[::-1][:-1]
+            hdir = match.group(2)[::-1]
         # save clusters
-        if hfile not in hdir:
+        if hfile not in os.listdir(hdir):
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:

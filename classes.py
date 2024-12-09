@@ -143,6 +143,7 @@ class Cluster:
                     index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
                     emb = emb[:index]
                 # find the clusters the number of which is the greatest
+                cnt = 0
                 best_dbscan = numpy.full(len(emb), -1)
                 dbscan = numpy.full(len(emb), -1)
                 while max(dbscan) >= max(best_dbscan) and cnt < brake:
@@ -163,7 +164,7 @@ class Cluster:
         else:
             match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
             hfile = match.group(1)[:-1][::-1]
-            hdir = os.listdir(match.group(2))[::-1]
+            hdir = os.listdir(match.group(2)[::-1])
         # save clusters
         if hfile not in hdir:
             with h5py.File(path, 'w') as h:

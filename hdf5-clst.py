@@ -34,7 +34,7 @@ if __name__ == '__main__':
         emb = Embedding(data.dataset(key=lang)) # embedding obj
         emb.embed(gpu=gpu) # embed the text
         if save_vector:
-            emb.save_vector(path=f'result/embedding-{id}.hdf5', name=lang)
+            emb.save_vector(path=f'result/{id}/embedding.hdf5', name=lang)
         time_emb = datetime.now() - start
         print(f'{lang}: Embedding is done. ({time_emb.seconds} seconds.)')
 
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         clst = Cluster(emb.embeddings) # cluster obj
         clst.cluster() # cluster the embeddings
         if save_cluster:
-            clst.save_cluster(path=f'result/dbscan-{lang}.hdf5', name=lang)
+            clst.save_cluster(path=f'result/{id}/dbscan.hdf5', name=lang)
         time_clst = datetime.now() - start_clst
         print(f'{lang}: Clustering is done. ({time_clst.seconds} seconds.)')
 
@@ -62,5 +62,5 @@ if __name__ == '__main__':
     fig = px.scatter(df, x = 'language', y = 'entropy')
     if save_entropy:
         df.to_csv(f'result/{id}/entropy-{lang}.csv', index=False)
-        fig.write_html(f'graph-{id}.html')
+        fig.write_html(f'result/graph-{id}.html')
     fig.show()

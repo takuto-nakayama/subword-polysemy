@@ -35,23 +35,32 @@ if __name__ == '__main__':
         emb.embed(gpu=gpu) # embed the text
         if save_vector:
             emb.save_vector(path=f'result/embedding-{id}.hdf5', name=lang)
+        time_emb = datetime.now() - start
+        print(f'{lang}: Embedding is done. ({time_emb.seconds} seconds.)')
 
+        start_clst = datetime.now()
         clst = Cluster(emb.embeddings) # cluster obj
         clst.cluster() # cluster the embeddings
         if save_cluster:
             clst.save_cluster(path=f'result/dbscan-{lang}.hdf5', name=lang)
+        time_clst = datetime.now() - start_clst
+        print(f'{lang}: Clustering is done. ({time_clst.seconds} seconds.)')
+
+        start_ent = datetime.now()
         dict_entropy[lang] = clst.entropy() # calculate entropies
-        
         end = datetime.now() # ending time
+        time_ent = end - start_ent
+        print(f'{lang}: Entropy is done -> {dict_entropy[lang]}. ({time_ent.seconds} seconds.)')
+
+        # output amount of processing time        
         time = end - start
-        
-        # output processing time
-        print(f'{lang} is done. ({time.seconds} seconds.)')
+        print(f'{lang} is done. (Total: {time.seconds} seconds.)')
 
     # plot and save the result
     d = {'language': dict_entropy.keys(), 'entropy': dict_entropy.values()}
     df = pd.DataFrame(d)
     fig = px.scatter(df, x = 'language', y = 'entropy')
     if save_entropy:
+        df.to_csv(f'result/{id}/entropy-{lang}.csv', index=False)
         fig.write_html(f'graph-{id}.html')
     fig.show()

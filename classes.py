@@ -132,7 +132,7 @@ class Cluster:
         self.entropies = {}
         self.embeddings = embeddings
 
-    def cluster(self, min=2, pca=False, e=0.5, dif=0.5):
+    def cluster(self, min=2, pca=False, e=0.5, dif=0.5, brake=10):
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= min:
@@ -144,11 +144,15 @@ class Cluster:
                     emb = emb[:index]
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)
-                dbscan = DBSCAN(eps=e, min_samples=min, metric='euclidean').fit_predict(emb)
-                while max(dbscan) >= max(best_dbscan):
+                dbscan = numpy.full(len(emb), -1)
+                while max(dbscan) >= max(best_dbscan) and cnt < brake:
+                    if max(dbscan) == max(best_dbscan):
+                        cnt += 1
+                    else:
+                        cnt = 0
                     best_dbscan = dbscan
+                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
                     e += dif
-                    dbscan = DBSCAN(eps=e, min_samples=min, metric='euclidean').fit_predict(emb)
                 self.dbscan[sw] = best_dbscan
     
     def save_cluster(self, path:str, name:str):

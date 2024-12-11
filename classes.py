@@ -180,7 +180,7 @@ class Cluster:
                         cnt = 0
                     best_dbscan = dbscan
                     if gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(emb)
+                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
                     else:
                         dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
                     e += dif

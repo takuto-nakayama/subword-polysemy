@@ -9,7 +9,7 @@ if __name__ == '__main__':
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', default=True, type=bool)
-    parser.add_argument('save_cluster', default=False, type=bool)
+    parser.add_argument('--save_cluster', default=False, type=bool)
     args = parser.parse_args()
 
     language = args.language

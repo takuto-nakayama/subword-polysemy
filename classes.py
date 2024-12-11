@@ -1,7 +1,8 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
+from cuml.cluster import DBSCAN as cuDBSCAN
 from sklearn.decomposition import PCA
-import os, h5py, re, numpy, torch, math, statistics
+import os, h5py, re, numpy, torch, math, statistics, cuml, wikipedia
 
 class Dataset:
     def __init__(self, path:str):
@@ -58,7 +59,24 @@ class Dataset:
             print('Error: Group name or dataset name is required')
         else:
             print('Error: Something is wrong in arguments')
- 
+
+class WikipediaText:
+    def load_text(self, language:str, num:int):
+        wikipedia.set_lang(language)
+        list_text = []
+
+        for _ in range(num):
+            random_title = wikipedia.random()
+            page = wikipedia.page(random_title)
+            text = page.content
+            text = text.split('\n')
+            text = [x for x in text if x != '' and ' ']
+            text = [x for x in text if '== ' not in x]
+            for t in text:
+                list_text.append(t)
+        
+        return list_text
+
 class Embedding:
     def __init__(self, text=numpy.ndarray, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased'):
         self.text = text
@@ -132,7 +150,7 @@ class Cluster:
         self.entropies = {}
         self.embeddings = embeddings
 
-    def cluster(self, min=2, pca=False, e=0.5, dif=0.5, brake=10):
+    def cluster(self, min=2, pca=False, gpu=True, e=0.5, dif=0.5, brake=10):
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= min:
@@ -152,7 +170,10 @@ class Cluster:
                     else:
                         cnt = 0
                     best_dbscan = dbscan
-                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                    if gpu:
+                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(emb)
+                    else:
+                        dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
                     e += dif
                 self.dbscan[sw] = best_dbscan
     

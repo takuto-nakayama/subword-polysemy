@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
         start_clst = datetime.now()
         clst = Cluster(emb.embeddings) # cluster obj
-        clst.cluster() # cluster the embeddings
+        clst.cluster(gpu=gpu) # cluster the embeddings
         if save_cluster:
             clst.save_cluster(path=f'result/{id}/dbscan.hdf5', name=lang)
         time_clst = datetime.now() - start_clst

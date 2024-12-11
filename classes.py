@@ -2,7 +2,7 @@ from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from cuml.cluster import DBSCAN as cuDBSCAN
 from sklearn.decomposition import PCA
-import os, h5py, re, numpy, torch, math, statistics, cuml
+import os, h5py, re, numpy, torch, math, statistics, cuml, wikipedia
 
 class Dataset:
     def __init__(self, path:str):
@@ -59,7 +59,24 @@ class Dataset:
             print('Error: Group name or dataset name is required')
         else:
             print('Error: Something is wrong in arguments')
- 
+
+class WikipediaText:
+    def load_text(self, language:str, num:int):
+        wikipedia.set_lang(language)
+        list_text = []
+
+        for _ in range(num):
+            random_title = wikipedia.random()
+            page = wikipedia.page(random_title)
+            text = page.content
+            text = text.split('\n')
+            text = [x for x in text if x != '' and ' ']
+            text = [x for x in text if '== ' not in x]
+            for t in text:
+                list_text.append(t)
+        
+        return list_text
+
 class Embedding:
     def __init__(self, text=numpy.ndarray, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased'):
         self.text = text

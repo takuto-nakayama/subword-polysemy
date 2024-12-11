@@ -52,6 +52,7 @@ if __name__ == '__main__':
                         ent])
     
     if id not in os.listdir('result'):
+        os.mkdir(f'result/{id}')
         with open(f'result/{id}/result-{id}.csv', 'w', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['language', 'number of subwords', 'average paragraphs', 'entropy'])

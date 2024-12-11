@@ -19,7 +19,7 @@ if __name__ == '__main__':
     save_cluster = args.save_cluster
 
     list_title = []
-    if id not in os.mkdir('result'):
+    if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')
 
     start = datetime.now()

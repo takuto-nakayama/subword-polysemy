@@ -16,7 +16,6 @@ if __name__ == '__main__':
     id = args.id
     gpu = args.gpu
 
-    list_result = []
     list_title = []
 
     start = datetime.now()
@@ -46,10 +45,10 @@ if __name__ == '__main__':
     time = end - start
     print(f'Entropy is done ({ent}). ({time_ent.seconds} seconds.)')
 
-    list_result.append([language,
-                        len(emb.embeddings.keys()),
-                        len(text) / num,
-                        ent])
+    list_result = [language,
+                   len(emb.embeddings.keys()),
+                    len(text) / num,
+                    ent]
     
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')

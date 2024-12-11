@@ -3,7 +3,7 @@ from sklearn.cluster import DBSCAN
 from cuml.cluster import DBSCAN as cuDBSCAN
 from sklearn.decomposition import PCA
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
-import os, h5py, re, numpy, torch, math, statistics, cuml, wikipedia
+import os, h5py, re, numpy, torch, math, statistics, cuml, wikipedia, time
 
 class Dataset:
     def __init__(self, path:str):
@@ -82,8 +82,10 @@ class WikipediaText:
                     self.list_text.append(t)
                 cnt += 1
                 self.list_title.append(page.title)
+                time.sleep(1)
             except (DisambiguationError, PageError, HTTPTimeoutError) as e:
                 print(f'Error encountered: {e}. Skipping.')
+                time.sleep(1)
                 continue
 
 class Embedding:

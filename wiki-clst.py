@@ -18,7 +18,6 @@ if __name__ == '__main__':
     gpu = args.gpu
     save_cluster = args.save_cluster
 
-    list_title = []
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')
 
@@ -26,7 +25,7 @@ if __name__ == '__main__':
     wiki = WikipediaText()
     wiki.load_text(language=language, num=num)
     text = wiki.list_text
-    list_title.append(wiki.list_title)
+    list_title = wiki.list_title
     time_text = datetime.now() - start
     print(f'Text processnig is done. ({time_text.seconds} seconds.)')
 

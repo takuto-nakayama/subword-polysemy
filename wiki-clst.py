@@ -1,7 +1,7 @@
 from classes import WikipediaText, Embedding, Cluster
 from datetime import datetime
 from plotly import express as px
-import argparse, os, pandas as pd
+import argparse, os, csv, pandas as pd
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -52,12 +52,22 @@ if __name__ == '__main__':
                         ent])
     
     if id not in os.listdir('result'):
-        with open(f'result/{id}/result-{id}.csv', 'w') as f:
-            f.write('language, number of subwords, average paragraphs, entropy\n')
-            f.write(f'{list_result[0]},{list_result[1]}, {list_result[2]}, {list_result[3]}\n')
+        with open(f'result/{id}/result-{id}.csv', 'w', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(['language', 'number of subwords', 'average paragraphs', 'entropy'])
+            writer.writerow(list_result)
+        with open(f'result/{id}/title-{id}.csv', 'w', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            list_title.insert(0, language)
+            writer.writerow(list_title)
     else:
-        with open(f'result/{id}/result-{id}.csv', 'a') as f:
-            f.write(f'{list_result[0]},{list_result[1]}, {list_result[2]}, {list_result[3]}\n')
+        with open(f'result/{id}/result-{id}.csv', 'a', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(list_result)
+        with open(f'result/{id}/title-{id}.csv', 'a', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            list_title.insert(0, language)
+            writer.writerow(list_title)
 
     print(f'All processing is done. ({time.seconds} seconds.)')
 

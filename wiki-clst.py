@@ -56,7 +56,7 @@ if __name__ == '__main__':
                     len(text) / num,
                     ent]
     
-    if id not in os.listdir('result'):
+    if f'result-{id}.csv' not in os.listdir(f'result/{id}'):
         with open(f'result/{id}/result-{id}.csv', 'w', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['language', 'number of subwords', 'average paragraphs', 'entropy'])

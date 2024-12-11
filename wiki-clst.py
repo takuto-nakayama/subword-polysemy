@@ -9,14 +9,18 @@ if __name__ == '__main__':
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', default=True, type=bool)
+    parser.add_argument('save_cluster', default=False, type=bool)
     args = parser.parse_args()
 
     language = args.language
     num = args.num
     id = args.id
     gpu = args.gpu
+    save_cluster = args.save_cluster
 
     list_title = []
+    if id not in os.mkdir('result'):
+        os.mkdir(f'result/{id}')
 
     start = datetime.now()
     wiki = WikipediaText()
@@ -35,6 +39,8 @@ if __name__ == '__main__':
     start_clst =  datetime.now()
     clst = Cluster(emb.embeddings)
     clst.cluster(gpu=gpu)
+    if save_cluster:
+        clst.save_cluster(path=f'result/{id}/cluster-{id}', name=language)
     time_clst = datetime.now() - start_clst
     print(f'Clustering is done. ({time_clst.seconds} seconds.)')
 
@@ -51,7 +57,6 @@ if __name__ == '__main__':
                     ent]
     
     if id not in os.listdir('result'):
-        os.mkdir(f'result/{id}')
         with open(f'result/{id}/result-{id}.csv', 'w', encoding='utf-8') as f:
             writer = csv.writer(f)
             writer.writerow(['language', 'number of subwords', 'average paragraphs', 'entropy'])

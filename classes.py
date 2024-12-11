@@ -200,11 +200,19 @@ class Cluster:
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:
+                    if sw == '.':
+                        sw = '\u2024'
+                    elif sw == '/':
+                        sw = '\u2044'
                     g.create_dataset(name=sw, data=self.dbscan[sw])
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:
+                    if sw == '.':
+                        sw = '\u2024'
+                    elif sw == '/':
+                        sw = '\u2044'
                     g.create_dataset(name=sw, data=self.dbscan[sw])
 
     def entropy(self):

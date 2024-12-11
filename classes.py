@@ -2,6 +2,7 @@ from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from cuml.cluster import DBSCAN as cuDBSCAN
 from sklearn.decomposition import PCA
+from wikipedia.exceptions import DisambiguationError
 import os, h5py, re, numpy, torch, math, statistics, cuml, wikipedia
 
 class Dataset:
@@ -61,21 +62,28 @@ class Dataset:
             print('Error: Something is wrong in arguments')
 
 class WikipediaText:
+    def __init__(self):
+        self.list_text = []
+        self.list_title = []
+
     def load_text(self, language:str, num:int):
         wikipedia.set_lang(language)
-        list_text = []
-
-        for _ in range(num):
-            random_title = wikipedia.random()
-            page = wikipedia.page(random_title)
-            text = page.content
-            text = text.split('\n')
-            text = [x for x in text if x != '' and ' ']
-            text = [x for x in text if '== ' not in x]
-            for t in text:
-                list_text.append(t)
-        
-        return list_text
+        cnt = 1
+        # roop for the input times
+        while num >= cnt:
+            try:
+                random_title = wikipedia.random()
+                page = wikipedia.page(random_title)
+                text = page.content
+                text = text.split('\n') # paragraph corresponds to a line
+                text = [x for x in text if x != '' and ' '] # remove blanks
+                text = [x for x in text if '== ' not in x] # remove section titles
+                for t in text:
+                    self.list_text.append(t)
+                cnt += 1
+                self.list_title.append(page.title)
+            except DisambiguationError:
+                continue
 
 class Embedding:
     def __init__(self, text=numpy.ndarray, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased'):

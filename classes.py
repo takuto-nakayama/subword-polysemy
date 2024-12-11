@@ -200,11 +200,16 @@ class Cluster:
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:
-                    if sw == '.':
-                        g.create_dataset(name='\u2024', data=self.dbscan[sw])
-                    elif sw == '/':
-                        g.create_dataset(name='\u2044', data=self.dbscan[sw])
-                    g.create_dataset(name=sw, data=self.dbscan[sw])
+                    try:
+                        if sw == '.':
+                            g.create_dataset(name='\u2024', data=self.dbscan[sw])
+                        elif sw == '/':
+                            g.create_dataset(name='\u2044', data=self.dbscan[sw])
+                        else:
+                            g.create_dataset(name=sw, data=self.dbscan[sw])
+                    except:
+                        print(f'SavingClusterError: subword "{sw}". Skipping.')
+                        continue
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)

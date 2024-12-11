@@ -40,7 +40,7 @@ if __name__ == '__main__':
     clst = Cluster(emb.embeddings)
     clst.cluster(gpu=gpu)
     if save_cluster:
-        clst.save_cluster(path=f'result/{id}/cluster-{id}', name=language)
+        clst.save_cluster(path=f'result/{id}/cluster-{id}.hdf5', name=language)
     time_clst = datetime.now() - start_clst
     print(f'Clustering is done. ({time_clst.seconds} seconds.)')
 

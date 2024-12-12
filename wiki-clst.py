@@ -27,13 +27,13 @@ if __name__ == '__main__':
     text = wiki.list_text
     list_title = wiki.list_title
     time_text = datetime.now() - start
-    print(f'Text processnig is done. ({time_text.seconds} seconds.)')
+    print(f'Text processnig is done ({len(text)} ¶s). ({time_text.seconds} seconds.)')
 
     start_emb = datetime.now()
     emb = Embedding(text)
     emb.embed(gpu=gpu)
     time_emb = datetime.now() - start_emb
-    print(f'Embedding is done. ({time_emb.seconds} seconds.)')
+    print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 
     start_clst =  datetime.now()
     clst = Cluster(emb.embeddings)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     end = datetime.now()
     time_ent = end - start_ent
     time = end - start
-    print(f'Entropy is done ({ent}). ({time_ent.seconds} seconds.)')
+    print(f'Entropy is done (H={ent}). ({time_ent.seconds} seconds.)')
 
     list_result = [language,
                    len(emb.embeddings.keys()),

@@ -141,18 +141,36 @@ class Embedding:
         else:
             match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
             hfile = match.group(1)[:-1][::-1]
-            hdir = os.listdir(match.group(2))[::-1]
+            hdir = os.listdir(match.group(2)[::-1])
         # save vectors
         if hfile not in hdir:
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.embeddings:
-                    g.create_dataset(name=sw, data=self.embeddings[sw])
+                    try:
+                        if sw == '.':
+                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
+                        elif sw == '/':
+                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
+                        else:
+                            g.create_dataset(name=sw, data=self.embeddings[sw])
+                    except:
+                        print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                        continue
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)
                 for sw in self.embeddings:
-                    g.create_dataset(name=sw, data=self.embeddings[sw])
+                    try:
+                        if sw == '.':
+                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
+                        elif sw == '/':
+                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
+                        else:
+                            g.create_dataset(name=sw, data=self.embeddings[sw])
+                    except:
+                        print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                        continue
 
 class Cluster:
     def __init__(self, embeddings=numpy.ndarray):
@@ -161,9 +179,6 @@ class Cluster:
         self.embeddings = embeddings
 
     def cluster(self, min=2, pca=False, gpu=True, e=0.5, dif=0.5, brake=10):
-        if gpu:
-            from cuml.cluster import DBSCAN as cuDBSCAN
-            import cuml
 
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
@@ -184,10 +199,7 @@ class Cluster:
                     else:
                         cnt = 0
                     best_dbscan = dbscan
-                    if gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
-                    else:
-                        dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
                     e += dif
                 self.dbscan[sw] = best_dbscan
     

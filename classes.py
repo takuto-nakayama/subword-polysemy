@@ -179,7 +179,9 @@ class Cluster:
         self.embeddings = embeddings
 
     def cluster(self, min=2, pca=False, gpu=True, e=0.5, dif=0.5, brake=10):
-
+        if gpu:
+            from cuml.cluster import DBSCAN as cuDBSCAN
+            import cuml
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= min:
@@ -199,7 +201,10 @@ class Cluster:
                     else:
                         cnt = 0
                     best_dbscan = dbscan
-                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                    if gpu:
+                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
+                    else:
+                        dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
                     e += dif
                 self.dbscan[sw] = best_dbscan
     

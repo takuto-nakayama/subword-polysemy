@@ -61,54 +61,40 @@ class Dataset:
             print('Error: Something is wrong in arguments')
 
 class WikipediaText:
-    def __init__(self):
-        self.list_text = []
+    def __init__(self, language:str):
         self.list_title = []
+        wikipedia.set_lang(language)
 
     def load_text(self, language:str, num:int):
-        wikipedia.set_lang(language)
-        cnt = 1
-        # roop for the input times
-        while num >= cnt:
-            try:
-                random_title = wikipedia.random()
-                page = wikipedia.page(random_title)
-                text = page.content
-                text = text.split('\n') # paragraph corresponds to a line
-                text = [x for x in text if x != '' and ' '] # remove blanks
-                text = [x for x in text if '== ' not in x] # remove section titles
-                for t in text:
-                    self.list_text.append(t)
-                cnt += 1
-                self.list_title.append(page.title)
-                time.sleep(1)
-            except (DisambiguationError, PageError, HTTPTimeoutError) as e:
-                print(f'Error encountered: {e}. Skipping.')
-                time.sleep(1)
-                continue
-            except requests.exceptions.ConnectionError as e:
-                print(f'Error encountered: {e}. Skipping.')
-                time.sleep(5)
-                continue
+        random_title = wikipedia.random()
+        page = wikipedia.page(random_title)
+        text = page.content
+        text = text.split('\n') # paragraph corresponds to a line
+        text = [x for x in text if x != '' and ' '] # remove blanks
+        text = [x for x in text if '== ' not in x] # remove section titles
+        self.list_title.append(page.title)
+        return text
+
 
 class Embedding:
-    def __init__(self, text=numpy.ndarray, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased'):
-        self.text = text
+    def __init__(self, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased', gpu:bool=True):
         self.embeddings = {}
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
-
-    def embed(self, gpu:bool=True):
-        if gpu:
+        self.gpu = gpu
+        if self.gpu:
             # CPU -> GPU
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = self.model.to(device)
-            print(f"Using device: {device}")
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.model = self.model.to(self.device)
+            print(f"Using device: {self.device}")
+
+    def embed(self, text:str):
+        if self.gpu:
             # txt corresponds to a sentence
-            for txt in self.text:       
+            for txt in text:       
                 # get subword tokens
                 encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
-                encoded = {key: value.to(device) for key, value in encoded.items()}
+                encoded = {key: value.to(self.device) for key, value in encoded.items()}
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
                 # get embeddings
                 with torch.no_grad():

@@ -1,7 +1,8 @@
 from classes import WikipediaText, Embedding, Cluster
 from datetime import datetime
-from plotly import express as px
-import argparse, os, csv, pandas as pd
+from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
+
+import argparse, os, csv, time, requests
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -24,19 +25,29 @@ if __name__ == '__main__':
         os.mkdir(f'result/{id}')
 
     start = datetime.now()
-    wiki = WikipediaText()
-    wiki.load_text(language=language, num=num)
-    text = wiki.list_text
+    wiki = WikipediaText(language)
+    paragraphs = 0
+    cnt = 1
+    emb = Embedding()
+    while cnt <= num:
+        try:
+            text = wiki.random_text()
+            emb.embed(text)
+            paragraphs += len(text)
+            cnt += 1
+        except (DisambiguationError, PageError, HTTPTimeoutError) as e:
+            print(f'Error encountered: {e}. Skipping.')
+            time.sleep(1)
+            continue
+        except requests.exceptions.ConnectionError as e:
+            print(f'Error encountered: {e}. Skipping.')
+            time.sleep(3)
+            continue
     list_title = wiki.list_title
-    time_text = datetime.now() - start
-    print(f'Text processnig is done ({len(text)} ¶s). ({time_text.seconds} seconds.)')
-
-    start_emb = datetime.now()
-    emb = Embedding(text)
-    emb.embed(gpu=gpu)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
-    time_emb = datetime.now() - start_emb
+    time_emb = datetime.now() - start
+    print(f'Text processnig is done ({paragraphs} ¶s, {len(list_title)} articles).')
     print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 
     start_clst =  datetime.now()

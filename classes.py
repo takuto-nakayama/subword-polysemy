@@ -2,7 +2,7 @@ from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
-import os, h5py, re, numpy, torch, math, statistics, wikipedia, time
+import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests
 
 class Dataset:
     def __init__(self, path:str):
@@ -85,6 +85,10 @@ class WikipediaText:
             except (DisambiguationError, PageError, HTTPTimeoutError) as e:
                 print(f'Error encountered: {e}. Skipping.')
                 time.sleep(1)
+                continue
+            except requests.exceptions.ConnectionError as e:
+                print(f'Error encountered: {e}. Skipping.')
+                time.sleep(5)
                 continue
 
 class Embedding:

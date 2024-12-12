@@ -9,6 +9,7 @@ if __name__ == '__main__':
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', default=True, type=bool)
+    parser.add_argument('--save_embedding', default=False, type=bool)
     parser.add_argument('--save_cluster', default=False, type=bool)
     args = parser.parse_args()
 
@@ -16,6 +17,7 @@ if __name__ == '__main__':
     num = args.num
     id = args.id
     gpu = args.gpu
+    save_embedding = args.save_embedding
     save_cluster = args.save_cluster
 
     if id not in os.listdir('result'):
@@ -32,6 +34,8 @@ if __name__ == '__main__':
     start_emb = datetime.now()
     emb = Embedding(text)
     emb.embed(gpu=gpu)
+    if save_embedding:
+        emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start_emb
     print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 

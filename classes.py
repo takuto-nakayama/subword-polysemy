@@ -178,13 +178,14 @@ class Cluster:
         self.entropies = {}
         self.embeddings = embeddings
 
-    def cluster(self, min=2, pca=False, gpu=True, e=0.5, dif=0.5, brake=10):
+    def cluster(self, min=2, pca=False, gpu=True, eps=0.5, dif=0.5, brake=10):
         if gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
             import cuml
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= min:
+                e = eps
                 # pca version
                 if pca:
                     pca = PCA()
@@ -192,20 +193,20 @@ class Cluster:
                     index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
                     emb = emb[:index]
                 # find the clusters the number of which is the greatest
-                cnt = 0
                 best_dbscan = numpy.full(len(emb), -1)
-                dbscan = numpy.full(len(emb), -1)
-                while max(dbscan) >= max(best_dbscan) and cnt < brake:
-                    if max(dbscan) == max(best_dbscan):
-                        cnt += 1
-                    else:
-                        cnt = 0
+                if gpu:
+                    dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
+                else:
+                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                while max(dbscan) >= max(best_dbscan):
                     best_dbscan = dbscan
+                    if len(best_dbscan)==numpy.sum(best_dbscan==0):
+                        break
+                    e += dif
                     if gpu:
                         dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
                     else:
                         dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
-                    e += dif
                 self.dbscan[sw] = best_dbscan
     
     def save_cluster(self, path:str, name:str):

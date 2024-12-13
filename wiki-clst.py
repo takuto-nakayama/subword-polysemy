@@ -39,11 +39,9 @@ if __name__ == '__main__':
             paragraphs += len(text)
             cnt += 1
         except (DisambiguationError, PageError, HTTPTimeoutError) as e:
-            print(f'Error encountered: {e}. Skipping.')
             time.sleep(1)
             continue
         except requests.exceptions.ConnectionError as e:
-            print(f'Error encountered: {e}. Skipping.')
             time.sleep(3)
             continue
     list_title = wiki.list_title

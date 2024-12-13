@@ -65,7 +65,7 @@ class WikipediaText:
         self.list_title = []
         wikipedia.set_lang(language)
 
-    def load_text(self, language:str, num:int):
+    def random_text(self):
         random_title = wikipedia.random()
         page = wikipedia.page(random_title)
         text = page.content

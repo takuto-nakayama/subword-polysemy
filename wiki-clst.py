@@ -25,14 +25,14 @@ if __name__ == '__main__':
         os.mkdir(f'result/{id}')
 
     start = datetime.now()
+    print(f'Processing started at {start.time()}.')
     wiki = WikipediaText(language)
     paragraphs = 0
     cnt = 1
     emb = Embedding()
     while cnt <= num:
         if cnt % (num/10) == 0:
-            process_time = datetime.now() - start
-            print(f'Text & Embedding: {cnt % (num/10)}% is done ({process_time.seconds} seconds).')
+            print(f'Text & Embedding: {cnt / (num/10)}% is done at {datetime.now().time}.')
         try:
             text = wiki.random_text()
             emb.embed(text)

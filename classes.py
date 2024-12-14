@@ -163,13 +163,14 @@ class Embedding:
                         continue
 
 class Cluster:
-    def __init__(self, embeddings=numpy.ndarray):
+    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True):
         self.dbscan = {}
         self.entropies = {}
+        self.gpu = gpu
         self.embeddings = embeddings
 
-    def cluster(self, min=2, pca=False, gpu=True, eps=0.5, dif=0.5, brake=10):
-        if gpu:
+    def cluster(self, min=2, pca=False, eps=0.5, dif=0.5, brake=10):
+        if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
             import cuml
         # emb corresponds to a set of embeddings of each subword

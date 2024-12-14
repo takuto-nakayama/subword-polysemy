@@ -60,8 +60,8 @@ if __name__ == '__main__':
         print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 
         start_clst =  datetime.now()
-        clst = Cluster(emb.embeddings)
-        clst.cluster(gpu=gpu)
+        clst = Cluster(emb.embeddings, gpu=gpu)
+        clst.cluster()
         if save_cluster:
             clst.save_cluster(path=f'result/{id}/cluster-{id}.hdf5', name=language)
         time_clst = datetime.now() - start_clst

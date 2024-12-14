@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
         list_result = [language,
                     len(emb.embeddings.keys()),
-                        len(text) / num,
+                        paragraphs / num,
                         ent]
         
         if f'result-{id}.csv' not in os.listdir(f'result/{id}'):

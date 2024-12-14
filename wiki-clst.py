@@ -39,8 +39,7 @@ if __name__ == '__main__':
         emb = Embedding(gpu=gpu)
         while cnt <= num:
             if cnt % (num/10) == 0:
-                process_time = datetime.now() - start
-                print(f'Text & Embedding: {cnt // (num/10)}% is done ({process_time.seconds} seconds).')
+                print(f'Text & Embedding: {cnt // (num/10)}/10 is done at {datetime.time()}.')
             try:
                 text = wiki.random_text()
                 emb.embed(text)
@@ -72,7 +71,7 @@ if __name__ == '__main__':
         ent = clst.entropy()
         end = datetime.now()
         time_ent = end - start_ent
-        time = end - start
+        process_time = end - start
         print(f'Entropy is done (H={ent}). ({time_ent.seconds} seconds.)')
 
         list_result = [language,
@@ -98,4 +97,4 @@ if __name__ == '__main__':
                 list_title.insert(0, language)
                 writer.writerow(list_title)
 
-            print(f'All processing is done. ({time.seconds} seconds.)')
+            print(f'All processing is done. ({process_time.seconds} seconds.)')

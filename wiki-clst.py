@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')
-    for language in languages:
+    for language in languages[start_slice:end_slice]:
         start = datetime.now()
         print(f'{language}: processing started at {start.time()}.')
         wiki = WikipediaText(language)

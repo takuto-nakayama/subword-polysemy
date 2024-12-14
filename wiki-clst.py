@@ -40,7 +40,7 @@ if __name__ == '__main__':
         while cnt <= num:
             if cnt % (num/10) == 0:
                 process_time = datetime.now() - start
-                print(f'Text & Embedding: {cnt % (num/10)}% is done ({process_time.seconds} seconds).')
+                print(f'Text & Embedding: {cnt // (num/10)}% is done ({process_time.seconds} seconds).')
             try:
                 text = wiki.random_text()
                 emb.embed(text)

@@ -36,7 +36,7 @@ if __name__ == '__main__':
         wiki = WikipediaText(language)
         paragraphs = 0
         cnt = 1
-        emb = Embedding()
+        emb = Embedding(gpu=gpu)
         while cnt <= num:
             if cnt % (num/10) == 0:
                 process_time = datetime.now() - start

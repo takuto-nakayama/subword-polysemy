@@ -25,7 +25,7 @@ if __name__ == '__main__':
         os.mkdir(f'result/{id}')
 
     start = datetime.now()
-    print(f'Processing started at {start.time()}.')
+    print(f'{language}: processing started at {start.time()}.')
     wiki = WikipediaText(language)
     paragraphs = 0
     cnt = 1

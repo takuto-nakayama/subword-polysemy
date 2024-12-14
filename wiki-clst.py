@@ -26,11 +26,11 @@ if __name__ == '__main__':
     save_cluster = args.save_cluster
 
     df_languages = pd.read_csv(languages)
-    languages = df_languages['ISO-code']
+    codes = df_languages['ISO-code']
 
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')
-    for language in languages[start_slice:end_slice]:
+    for language in codes[start_slice:end_slice]:
         start = datetime.now()
         print(f'{language}: processing started at {start.time()}.')
         wiki = WikipediaText(language)

@@ -36,6 +36,7 @@ if __name__ == '__main__':
         wiki = WikipediaText(language)
         paragraphs = 0
         cnt = 1
+        error_cnt = 0
         emb = Embedding(gpu=gpu)
         while cnt <= num:
             if cnt % (num/10) == 0:
@@ -50,8 +51,15 @@ if __name__ == '__main__':
                 continue
             except requests.exceptions.ConnectionError as e:
                 print(f'RequestsErrorEncountered: {e}')
+                error_cnt += 1
                 time.sleep(3)
-                continue
+                if error_cnt > 10:
+                    break
+                else:
+                    continue
+        if error_cnt > 10:
+            print(f'RequestsError: {language} got many errors. skipped to the next language.')
+            continue
         list_title = wiki.list_title
         if save_embedding:
             emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')

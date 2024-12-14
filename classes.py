@@ -163,13 +163,14 @@ class Embedding:
                         continue
 
 class Cluster:
-    def __init__(self, embeddings=numpy.ndarray):
+    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True):
         self.dbscan = {}
         self.entropies = {}
         self.embeddings = embeddings
+        self.gpu = gpu
 
     def cluster(self, min=2, pca=False, gpu=True, eps=0.5, dif=0.5, brake=10):
-        if gpu:
+        if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
             import cuml
         # emb corresponds to a set of embeddings of each subword
@@ -184,7 +185,7 @@ class Cluster:
                     emb = emb[:index]
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)
-                if gpu:
+                if self.gpu:
                     dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
                 else:
                     dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
@@ -193,7 +194,7 @@ class Cluster:
                     if len(best_dbscan)==numpy.sum(best_dbscan==0):
                         break
                     e += dif
-                    if gpu:
+                    if self.gpu:
                         dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
                     else:
                         dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)

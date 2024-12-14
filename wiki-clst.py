@@ -50,6 +50,7 @@ if __name__ == '__main__':
                 time.sleep(1)
                 continue
             except requests.exceptions.ConnectionError as e:
+                print(f'RequestsErrorEncountered: {e}')
                 time.sleep(3)
                 continue
         list_title = wiki.list_title

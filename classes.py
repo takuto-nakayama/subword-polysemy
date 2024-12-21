@@ -1,6 +1,7 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
+from cuml.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
 import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests
 
@@ -90,24 +91,37 @@ class Embedding:
 
     def embed(self, text:str):
         if self.gpu:
-            # txt corresponds to a sentence
-            for txt in text:       
-                # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
-                encoded = {key: value.to(self.device) for key, value in encoded.items()}
-                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
-                # get embeddings
-                with torch.no_grad():
-                    output = self.model(**encoded)
-                    embed = output.last_hidden_state.squeeze(0)
-                    for sw, emb in zip(subwords, embed):
+            # get subword tokens
+            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
+            encoded = {key: value.to(self.device) for key, value in encoded.items()}
+            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
+            # get embeddings
+            with torch.no_grad():
+                output = self.model(**encoded)
+                embeddings = output.last_hidden_state.squeeze(0)
+                for subword, embedding in zip(subwords, embeddings):
+                    for sw, emb in zip(subword, embedding):
                         emb = emb.cpu().numpy()
                         if sw not in self.embeddings:
                             self.embeddings[sw] = [emb]
                         else:
                             self.embeddings[sw].append(emb)
         else:
-            # txt corresponds to a sentence
+            # get subword tokens
+            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
+            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
+            # get embeddings
+            with torch.no_grad():
+                output = self.model(**encoded)
+                embeddings = output.last_hidden_state.squeeze(0)
+                for subword, embedding in zip(subwords, embeddings):
+                    for sw, emb in zip(subword, embedding):
+                        emb = emb.detach().numpy()
+                        if sw not in self.embeddings:
+                            self.embeddings[sw] = [emb]
+                        else:
+                            self.embeddings[sw].append(emb)
+
             for txt in self.text:
                 # get subword tokens
                 encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
@@ -169,20 +183,18 @@ class Cluster:
         self.embeddings = embeddings
         self.gpu = gpu
 
-    def cluster(self, min=2, pca=False, gpu=True, eps=0.5, dif=0.5, brake=10):
+    def cluster(self, min=2, tsne=True, eps=0.5, dif=0.5):
         if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
             import cuml
+        if tsne:
+            tsne = TSNE(n_components=3, random_state=42)
+            for sw in self.embeddings:
+                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= min:
                 e = eps
-                # pca version
-                if pca:
-                    pca = PCA()
-                    emb = pca.fit_transform(emb)
-                    index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
-                    emb = emb[:index]
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)
                 if self.gpu:

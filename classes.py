@@ -1,7 +1,6 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
-from sklearn.decomposition import PCA
-from cuml.manifold import TSNE
+from sklearn.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
 import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests
 
@@ -75,7 +74,6 @@ class WikipediaText:
         text = [x for x in text if '== ' not in x] # remove section titles
         self.list_title.append(page.title)
         return text
-
 
 class Embedding:
     def __init__(self, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased', gpu:bool=True):
@@ -177,39 +175,46 @@ class Embedding:
                         continue
 
 class Cluster:
-    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True):
+    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True, min_emb:int=10, min_samples:int=2):
         self.dbscan = {}
         self.entropies = {}
         self.embeddings = embeddings
         self.gpu = gpu
+        self.min_emb = min_emb
+        self.min_samples = min_samples
 
     def cluster(self, min=2, tsne=True, eps=0.5, dif=0.5):
         if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
-            import cuml
         if tsne:
-            tsne = TSNE(n_components=3, random_state=42)
-            for sw in self.embeddings:
-                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+            if self.gpu:
+                from cuml.manifold import cuTSNE
+                tsne = cuTSNE(n_components=3, random_state=42, perplexity=)
+                for sw in self.embeddings:
+                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+            else:
+                tsne = TSNE(n_components=3, random_state=42, perplexity=)
+                for sw in self.embeddings:
+                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb) >= min:
+            if len(emb) >= self.min_emb:
                 e = eps
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)
                 if self.gpu:
-                    dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
+                    dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(numpy.array(emb))
                 else:
-                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                    dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
                 while max(dbscan) >= max(best_dbscan):
                     best_dbscan = dbscan
                     if len(best_dbscan)==numpy.sum(best_dbscan==0):
                         break
                     e += dif
                     if self.gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
+                        dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(numpy.array(emb))
                     else:
-                        dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
+                        dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
                 self.dbscan[sw] = best_dbscan
     
     def save_cluster(self, path:str, name:str):

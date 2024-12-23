@@ -103,7 +103,7 @@ class Embedding:
                         if sw not in self.embeddings:
                             self.embeddings[sw] = emb
                         else:
-                            self.embeddings[sw] = np.concatenate((self.embeddings[sw], emb), axis=0)
+                            self.embeddings[sw] = np.vstack((self.embeddings[sw], emb), axis=0)
 
         else:
             # get subword tokens
@@ -119,7 +119,7 @@ class Embedding:
                         if sw not in self.embeddings:
                             self.embeddings[sw] = emb
                         else:
-                            self.embeddings[sw] = np.concatenate((self.embeddings[sw], emb), axis=0)
+                            self.embeddings[sw] = np.vstack((self.embeddings[sw], emb), axis=0)
     def tsne(self,n_components:int=2):
         if self.gpu:
             from cuml.manifold import cuTSNE

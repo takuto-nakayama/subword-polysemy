@@ -38,9 +38,9 @@ if __name__ == '__main__':
     print(f'{language}: processing started at {start.time()}.')
     wiki = WikipediaText(language)
     paragraphs = 0
-    cnt = 1
+    cnt = 0
     emb = Embedding(gpu=gpu)
-    while cnt <= num:
+    while cnt < num:
         try:
             text = wiki.random_text()
             emb.embed(text)

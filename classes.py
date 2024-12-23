@@ -195,7 +195,7 @@ class Cluster:
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)
                 if self.gpu:
-                    dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(numpy.array(emb))
+                    dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
                 else:
                     dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
                 while max(dbscan) >= max(best_dbscan):
@@ -204,7 +204,7 @@ class Cluster:
                         break
                     e += dif
                     if self.gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(numpy.array(emb))
+                        dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
                     else:
                         dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
                 self.dbscan[sw] = best_dbscan

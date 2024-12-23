@@ -99,12 +99,12 @@ class Embedding:
                 embeddings = output.last_hidden_state.squeeze(0)
                 for subword, embedding in zip(subwords, embeddings):
                     for sw, emb in zip(subword, embedding):
-                        emb = emb.cpu().numpy()
-                        if sw not in self.embeddings:
-                            self.embeddings[sw] = emb
-                        else:
-                            self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-
+                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
+                            emb = emb.cpu().numpy()
+                            if sw not in self.embeddings:
+                                self.embeddings[sw] = emb
+                            else:
+                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
         else:
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
@@ -115,11 +115,13 @@ class Embedding:
                 embeddings = output.last_hidden_state.squeeze(0)
                 for subword, embedding in zip(subwords, embeddings):
                     for sw, emb in zip(subword, embedding):
-                        emb = emb.detach().numpy()
-                        if sw not in self.embeddings:
-                            self.embeddings[sw] = emb
-                        else:
-                            self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
+                            emb = emb.detach().numpy()
+                            if sw not in self.embeddings:
+                                self.embeddings[sw] = emb
+                            else:
+                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+
     def tsne(self,n_components:int=2):
         if self.gpu:
             from cuml.manifold import cuTSNE

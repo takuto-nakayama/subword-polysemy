@@ -104,7 +104,11 @@ class Embedding:
                             if sw not in self.embeddings:
                                 self.embeddings[sw] = emb
                             else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+                                try:
+                                    self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+                                except ValueError as e:
+                                    print(f'{e}. {sw}/{emb}')
+
         else:
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
@@ -120,7 +124,10 @@ class Embedding:
                             if sw not in self.embeddings:
                                 self.embeddings[sw] = emb
                             else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+                                try:
+                                    self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+                                except ValueError as e:
+                                    print(f'{e}. {sw}/{emb}')
 
     def tsne(self,n_components:int=2):
         if self.gpu:
@@ -131,6 +138,7 @@ class Embedding:
                 self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         else:
             for sw in self.embeddings:
+                perplexity = len(self.embeddings[sw]) // 3
                 tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
                 perplexity = len(self.embeddings[sw]) // 3
                 self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])

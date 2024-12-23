@@ -54,7 +54,7 @@ if __name__ == '__main__':
             time.sleep(3)
             continue
     list_title = wiki.list_title
-    emb.tsne()
+    emb.tsne(min_samples)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start

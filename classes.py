@@ -183,17 +183,17 @@ class Cluster:
         self.min_emb = min_emb
         self.min_samples = min_samples
 
-    def cluster(self, tsne:bool, eps:float, dif:float):
+    def cluster(self, tsne:bool, perplexity:int, eps:float, dif:float):
         if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
         if tsne:
             if self.gpu:
                 from cuml.manifold import cuTSNE
-                tsne = cuTSNE(n_components=3, random_state=42, perplexity=)
+                tsne = cuTSNE(n_components=3, random_state=42, perplexity=perplexity)
                 for sw in self.embeddings:
                     self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
             else:
-                tsne = TSNE(n_components=3, random_state=42, perplexity=)
+                tsne = TSNE(n_components=3, random_state=42, perplexity=perplexity)
                 for sw in self.embeddings:
                     self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         # emb corresponds to a set of embeddings of each subword

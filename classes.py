@@ -96,7 +96,7 @@ class Embedding:
             # get embeddings
             with torch.no_grad():
                 output = self.model(**encoded)
-                embeddings = output.last_hidden_state.squeeze(0)
+                embeddings = output.last_hidden_state
                 for subword, embedding in zip(subwords, embeddings):
                     for sw, emb in zip(subword, embedding):
                         if sw not in ['[CLS]', '[SEP]', '[PAD]']:
@@ -104,11 +104,7 @@ class Embedding:
                             if sw not in self.embeddings:
                                 self.embeddings[sw] = emb
                             else:
-                                try:
-                                    self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-                                except ValueError as e:
-                                    print(f'{e}. {sw}/{emb}')
-
+                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
         else:
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
@@ -116,7 +112,7 @@ class Embedding:
             # get embeddings
             with torch.no_grad():
                 output = self.model(**encoded)
-                embeddings = output.last_hidden_state.squeeze(0)
+                embeddings = output.last_hidden_state
                 for subword, embedding in zip(subwords, embeddings):
                     for sw, emb in zip(subword, embedding):
                         if sw not in ['[CLS]', '[SEP]', '[PAD]']:
@@ -124,10 +120,7 @@ class Embedding:
                             if sw not in self.embeddings:
                                 self.embeddings[sw] = emb
                             else:
-                                try:
-                                    self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-                                except ValueError as e:
-                                    print(f'{e}. {sw}/{emb}')
+                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
 
     def tsne(self,n_components:int=2):
         if self.gpu:

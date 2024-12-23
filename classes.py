@@ -2,7 +2,7 @@ from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
-import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests
+import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests, numpy as np
 
 class Dataset:
     def __init__(self, path:str):
@@ -101,9 +101,10 @@ class Embedding:
                     for sw, emb in zip(subword, embedding):
                         emb = emb.cpu().numpy()
                         if sw not in self.embeddings:
-                            self.embeddings[sw] = [emb]
+                            self.embeddings[sw] = emb
                         else:
-                            self.embeddings[sw].append(emb)
+                            self.embeddings[sw] = np.concatenate((self.embeddings[sw], emb), axis=0)
+
         else:
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
@@ -116,25 +117,22 @@ class Embedding:
                     for sw, emb in zip(subword, embedding):
                         emb = emb.detach().numpy()
                         if sw not in self.embeddings:
-                            self.embeddings[sw] = [emb]
+                            self.embeddings[sw] = emb
                         else:
-                            self.embeddings[sw].append(emb)
-
-            for txt in self.text:
-                # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
-                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
-                # get embeddings
-                with torch.no_grad():
-                    output = self.model(**encoded)
-                    embed = output.last_hidden_state.squeeze(0)
-                    for sw, emb in zip(subwords, embed):
-                        emb = emb.detach().numpy()
-                        if sw not in self.embeddings:
-                            self.embeddings[sw] = [emb]
-                        else:
-                            self.embeddings[sw].append(emb)
-    
+                            self.embeddings[sw] = np.concatenate((self.embeddings[sw], emb), axis=0)
+    def tsne(self,n_components:int=2):
+        if self.gpu:
+            from cuml.manifold import cuTSNE
+            for sw in self.embeddings:
+                perplexity = len(self.embeddings[sw]) // 3
+                tsne = cuTSNE(n_components=n_components, random_state=42, perplexity=perplexity)
+                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+        else:
+            for sw in self.embeddings:
+                tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
+                perplexity = len(self.embeddings[sw]) // 3
+                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+            
     def save_vector(self, path:str, name:str):
         # identify the directory and the file
         if '/' not in path:
@@ -183,19 +181,9 @@ class Cluster:
         self.min_emb = min_emb
         self.min_samples = min_samples
 
-    def cluster(self, tsne:bool, perplexity:int, eps:float, dif:float):
+    def cluster(self, eps:float, dif:float):
         if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
-        if tsne:
-            if self.gpu:
-                from cuml.manifold import cuTSNE
-                tsne = cuTSNE(n_components=3, random_state=42, perplexity=perplexity)
-                for sw in self.embeddings:
-                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
-            else:
-                tsne = TSNE(n_components=3, random_state=42, perplexity=perplexity)
-                for sw in self.embeddings:
-                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             if len(emb) >= self.min_emb:

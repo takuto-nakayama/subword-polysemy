@@ -49,7 +49,6 @@ if __name__ == '__main__':
             paragraphs += len(text)
             cnt += 1
             print(f'\rText & Embedding: {cnt}/{num}', end='')
-
         except (DisambiguationError, PageError, HTTPTimeoutError) as e:
             time.sleep(1)
             continue
@@ -57,6 +56,7 @@ if __name__ == '__main__':
             time.sleep(3)
             continue
     list_title = wiki.list_title
+    emb.tsne(perplexity=perplexity)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start
@@ -65,7 +65,7 @@ if __name__ == '__main__':
 
     start_clst =  datetime.now()
     clst = Cluster(emb.embeddings, gpu=gpu, min_emb=min_emb, min_samples=min_samples)
-    clst.cluster(tsne, perplexity, eps, dif)
+    clst.cluster(eps, dif)
     if save_cluster:
         clst.save_cluster(path=f'result/{id}/cluster-{id}.hdf5', name=language)
     time_clst = datetime.now() - start_clst

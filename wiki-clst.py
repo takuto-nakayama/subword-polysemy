@@ -43,13 +43,13 @@ if __name__ == '__main__':
     cnt = 1
     emb = Embedding(gpu=gpu)
     while cnt <= num:
-        if cnt % (num/10) == 0:
-            print(f'Text & Embedding: {cnt//(num/10)}/10 is done at {datetime.now().time()}.')
         try:
             text = wiki.random_text()
             emb.embed(text)
             paragraphs += len(text)
             cnt += 1
+            print(f'\rText & Embedding: {cnt}/{num}')
+
         except (DisambiguationError, PageError, HTTPTimeoutError) as e:
             time.sleep(1)
             continue

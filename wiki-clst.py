@@ -48,7 +48,7 @@ if __name__ == '__main__':
             emb.embed(text)
             paragraphs += len(text)
             cnt += 1
-            print(f'\rText & Embedding: {cnt}/{num}')
+            print(f'\rText & Embedding: {cnt}/{num}', end='')
 
         except (DisambiguationError, PageError, HTTPTimeoutError) as e:
             time.sleep(1)

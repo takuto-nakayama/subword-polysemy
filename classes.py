@@ -175,7 +175,7 @@ class Embedding:
                         continue
 
 class Cluster:
-    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True, min_emb:int=10, min_samples:int=2):
+    def __init__(self, embeddings:numpy.ndarray, gpu:bool, min_emb:int, min_samples:int):
         self.dbscan = {}
         self.entropies = {}
         self.embeddings = embeddings
@@ -183,7 +183,7 @@ class Cluster:
         self.min_emb = min_emb
         self.min_samples = min_samples
 
-    def cluster(self, min=2, tsne=True, eps=0.5, dif=0.5):
+    def cluster(self, tsne:bool, eps:float, dif:float):
         if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
         if tsne:

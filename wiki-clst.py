@@ -10,6 +10,11 @@ if __name__ == '__main__':
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', default=True, type=bool)
+    parser.add_argument('--min_emb', default=10, type=int)
+    parser.add_argument('--min_samples', default=2, type=int)
+    parser.add_argument('--eps', default=0.5, type=float)
+    parser.add_argument('--dif', default=0.5, type=float)
+    parser.add_argument('--tsne', default=True, type=bool)
     parser.add_argument('--save_embedding', default=False, type=bool)
     parser.add_argument('--save_cluster', default=False, type=bool)
     args = parser.parse_args()
@@ -18,6 +23,11 @@ if __name__ == '__main__':
     num = args.num
     id = args.id
     gpu = args.gpu
+    min_emb = args.min_emb
+    min_samples = args.min_samples
+    eps = args.eps
+    dif = args.dif
+    tsne = args.tsne
     save_embedding = args.save_embedding
     save_cluster = args.save_cluster
 
@@ -53,8 +63,8 @@ if __name__ == '__main__':
     print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 
     start_clst =  datetime.now()
-    clst = Cluster(emb.embeddings, gpu=gpu)
-    clst.cluster()
+    clst = Cluster(emb.embeddings, gpu=gpu, min_emb=min_emb, min_samples=min_samples)
+    clst.cluster(tsne, eps, dif)
     if save_cluster:
         clst.save_cluster(path=f'result/{id}/cluster-{id}.hdf5', name=language)
     time_clst = datetime.now() - start_clst

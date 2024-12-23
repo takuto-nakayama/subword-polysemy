@@ -15,7 +15,6 @@ if __name__ == '__main__':
     parser.add_argument('--eps', default=0.5, type=float)
     parser.add_argument('--dif', default=0.5, type=float)
     parser.add_argument('--tsne', default=True, type=bool)
-    parser.add_argument('--perplexity', default=10, type=int)
     parser.add_argument('--save_embedding', default=False, type=bool)
     parser.add_argument('--save_cluster', default=False, type=bool)
     args = parser.parse_args()
@@ -29,7 +28,6 @@ if __name__ == '__main__':
     eps = args.eps
     dif = args.dif
     tsne = args.tsne
-    perplexity = args.perplexity
     save_embedding = args.save_embedding
     save_cluster = args.save_cluster
 
@@ -56,7 +54,7 @@ if __name__ == '__main__':
             time.sleep(3)
             continue
     list_title = wiki.list_title
-    emb.tsne(perplexity=perplexity)
+    emb.tsne()
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start

@@ -122,19 +122,21 @@ class Embedding:
                             else:
                                 self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
 
-    def tsne(self,n_components:int=2):
+    def tsne(self, min_samples:int, n_components:int=2):
         if self.gpu:
             from cuml.manifold import cuTSNE
             for sw in self.embeddings:
-                perplexity = len(self.embeddings[sw]) // 3
-                tsne = cuTSNE(n_components=n_components, random_state=42, perplexity=perplexity)
-                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+                if len(self.embeddings[sw]) <= min_samples:
+                    perplexity = len(self.embeddings[sw]) // 3
+                    tsne = cuTSNE(n_components=n_components, random_state=42, perplexity=perplexity)
+                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         else:
             for sw in self.embeddings:
-                perplexity = len(self.embeddings[sw]) // 3
-                tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
-                perplexity = len(self.embeddings[sw]) // 3
-                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+                if len(self.embeddings[sw]) <= min_samples:
+                    perplexity = len(self.embeddings[sw]) // 3
+                    tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
+                    perplexity = len(self.embeddings[sw]) // 3
+                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file

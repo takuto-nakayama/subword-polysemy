@@ -9,14 +9,14 @@ if __name__ == '__main__':
     parser.add_argument('language', type=str)
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
-    parser.add_argument('--gpu', default=True, type=bool)
+    parser.add_argument('--gpu', action='store_false')
     parser.add_argument('--min_emb', default=10, type=int)
     parser.add_argument('--min_samples', default=2, type=int)
     parser.add_argument('--eps', default=0.5, type=float)
     parser.add_argument('--dif', default=0.5, type=float)
-    parser.add_argument('--tsne', default=True, type=bool)
-    parser.add_argument('--save_embedding', default=False, type=bool)
-    parser.add_argument('--save_cluster', default=False, type=bool)
+    parser.add_argument('--tsne', action='store_false')
+    parser.add_argument('--save_embedding', action='store_true')
+    parser.add_argument('--save_cluster', action='store_true')
     args = parser.parse_args()
 
     language = args.language

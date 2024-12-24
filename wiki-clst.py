@@ -46,7 +46,7 @@ if __name__ == '__main__':
             emb.embed(text)
             paragraphs += len(text)
             cnt += 1
-            print(f'\rText & Embedding: {cnt}/{num}', end='')
+            print(f'\rText & Embedding: {cnt}/{num} articles.', end='')
         except (DisambiguationError, PageError, HTTPTimeoutError) as e:
             time.sleep(1)
             continue
@@ -54,6 +54,7 @@ if __name__ == '__main__':
             time.sleep(3)
             continue
     list_title = wiki.list_title
+    print(f'\ntSNE is processing...')
     emb.tsne(min_samples)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')

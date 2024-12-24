@@ -29,6 +29,7 @@ if __name__ == '__main__':
     eps = args.eps
     dif = args.dif
     tsne = args.tsne
+    p_ratio = args.p_ratio
     save_embedding = args.save_embedding
     save_cluster = args.save_cluster
 
@@ -56,7 +57,7 @@ if __name__ == '__main__':
             continue
     list_title = wiki.list_title
     print(f'\ntSNE is processing...')
-    emb.tsne(min_samples, divide)
+    emb.tsne(min_samples, p_ratio)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start

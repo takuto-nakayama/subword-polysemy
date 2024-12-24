@@ -15,6 +15,7 @@ if __name__ == '__main__':
     parser.add_argument('--eps', default=0.5, type=float)
     parser.add_argument('--dif', default=0.5, type=float)
     parser.add_argument('--tsne', action='store_false')
+    parser.add_argument('--p_ratio', default=0.3, type=float)
     parser.add_argument('--save_embedding', action='store_true')
     parser.add_argument('--save_cluster', action='store_true')
     args = parser.parse_args()
@@ -55,7 +56,7 @@ if __name__ == '__main__':
             continue
     list_title = wiki.list_title
     print(f'\ntSNE is processing...')
-    emb.tsne(min_samples)
+    emb.tsne(min_samples, divide)
     if save_embedding:
         emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
     time_emb = datetime.now() - start

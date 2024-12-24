@@ -126,13 +126,13 @@ class Embedding:
         if self.gpu:
             from cuml.manifold import cuTSNE
             for sw in self.embeddings:
-                if len(self.embeddings[sw].shape) == 2 and len(self.embeddings[sw].shape[0]) >= min_samples:
+                if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
                     perplexity = len(self.embeddings[sw]) // 3 + 0.5
                     tsne = cuTSNE(n_components=n_components, random_state=42, perplexity=perplexity)
                     self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
         else:
             for sw in self.embeddings:
-                if len(self.embeddings[sw].shape) == 2 and len(self.embeddings[sw].shape[0]) >= min_samples:
+                if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
                     perplexity = len(self.embeddings[sw]) // 3 + 0.5
                     tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
                     self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
@@ -190,7 +190,7 @@ class Cluster:
             from cuml.cluster import DBSCAN as cuDBSCAN
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb.shape) == 2 and len(emb.shape[0]) >= self.min_emb:
+            if len(emb.shape) == 2 and emb.shape[0] >= self.min_emb:
                 e = eps
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)

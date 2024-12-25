@@ -89,7 +89,6 @@ class Embedding:
 
     def embed(self, text:str):
         if self.gpu:
-            torch.cuda.empty_cache()
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
             encoded = {key: value.to(self.device) for key, value in encoded.items()}
@@ -106,6 +105,9 @@ class Embedding:
                                 self.embeddings[sw] = emb
                             else:
                                 self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+            del encoded, subwords, output, embeddings
+            torch.cuda.empty_cache()
+
         else:
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
@@ -122,6 +124,8 @@ class Embedding:
                                 self.embeddings[sw] = emb
                             else:
                                 self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
+            del encoded, subwords, output, embeddings
+            torch.cuda.empty_cache()
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         if self.gpu:

@@ -89,6 +89,7 @@ class Embedding:
 
     def embed(self, text:str):
         if self.gpu:
+            torch.cuda.empty_cache()
             # get subword tokens
             encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
             encoded = {key: value.to(self.device) for key, value in encoded.items()}

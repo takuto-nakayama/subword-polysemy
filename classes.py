@@ -128,19 +128,11 @@ class Embedding:
             torch.cuda.empty_cache()
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
-        if self.gpu:
-            from cuml.manifold import cuTSNE
-            for sw in self.embeddings:
-                if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
-                    perplexity = len(self.embeddings[sw]) * p_ratio
-                    tsne = cuTSNE(n_components=n_components, random_state=42, perplexity=perplexity)
-                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
-        else:
-            for sw in self.embeddings:
-                if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
-                    perplexity = len(self.embeddings[sw]) * p_ratio
-                    tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
-                    self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+        for sw in self.embeddings:
+            if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
+                perplexity = len(self.embeddings[sw]) * p_ratio
+                tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
+                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file

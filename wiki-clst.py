@@ -55,6 +55,9 @@ if __name__ == '__main__':
         except requests.exceptions.ConnectionError as e:
             time.sleep(3)
             continue
+        except:
+            time.sleep(1)
+            continue
     list_title = wiki.list_title
     print(f'\ntSNE is processing...')
     emb.tsne(min_samples, p_ratio)

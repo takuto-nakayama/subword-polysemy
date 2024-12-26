@@ -1,6 +1,6 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
-from sklearn.manifold import TSNE
+from openTSNE import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
 import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests, numpy as np
 
@@ -130,9 +130,8 @@ class Embedding:
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         for sw in self.embeddings:
             if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
-                perplexity = len(self.embeddings[sw]) * p_ratio
-                tsne = TSNE(n_components=n_components, random_state=42, perplexity=perplexity)
-                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+                tsne = TSNE(n_job=-1)
+                self.embeddings[sw] = tsne.fit(self.embeddings[sw])
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file

@@ -125,7 +125,6 @@ class Embedding:
                             else:
                                 self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
             del encoded, subwords, output, embeddings
-            torch.cuda.empty_cache()
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         for sw in self.embeddings:

@@ -182,7 +182,7 @@ class Cluster:
             from cuml.cluster import DBSCAN as cuDBSCAN
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb.shape) == 2 and emb.shape[0] >= self.min_emb:
+            if len(emb) == 2 and len(emb) >= self.min_emb:
                 e = eps
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)

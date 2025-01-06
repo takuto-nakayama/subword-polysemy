@@ -127,7 +127,7 @@ class Embedding:
         for sw in self.embeddings:
             if len(self.embeddings[sw]) == 2 and len(self.embeddings[sw]) >= min_samples:
                 tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
-                self.embeddings[sw] = tsne.fit_transform(self.embeddings[sw])
+                self.embeddings[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file

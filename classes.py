@@ -89,42 +89,39 @@ class Embedding:
 
     def embed(self, text:str):
         if self.gpu:
-            # get subword tokens
-            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
-            encoded = {key: value.to(self.device) for key, value in encoded.items()}
-            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
-            # get embeddings
-            with torch.no_grad():
-                output = self.model(**encoded)
-                embeddings = output.last_hidden_state
-                for subword, embedding in zip(subwords, embeddings):
-                    for sw, emb in zip(subword, embedding):
-                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
-                            emb = emb.cpu().numpy()
-                            if sw not in self.embeddings:
-                                self.embeddings[sw] = emb
-                            else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-            del encoded, subwords, output, embeddings
-            torch.cuda.empty_cache()
+        # txt corresponds to a sentence
+            for txt in text:       
+                # get subword tokens
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                encoded = {key: value.to(self.device) for key, value in encoded.items()}
+                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                # get embeddings
+                with torch.no_grad():
+                    output = self.model(**encoded)
+                    embed = output.last_hidden_state.squeeze(0)
+                    for sw, emb in zip(subwords, embed):
+                        emb = emb.cpu().numpy()
+                        if sw not in self.embeddings:
+                            self.embeddings[sw] = [emb]
+                        else:
+                            self.embeddings[sw].append(emb)
 
         else:
-            # get subword tokens
-            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
-            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
-            # get embeddings
-            with torch.no_grad():
-                output = self.model(**encoded)
-                embeddings = output.last_hidden_state
-                for subword, embedding in zip(subwords, embeddings):
-                    for sw, emb in zip(subword, embedding):
-                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
-                            emb = emb.detach().numpy()
-                            if sw not in self.embeddings:
-                                self.embeddings[sw] = emb
-                            else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-            del encoded, subwords, output, embeddings
+            # txt corresponds to a sentence
+            for txt in self.text:
+                # get subword tokens
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                # get embeddings
+                with torch.no_grad():
+                    output = self.model(**encoded)
+                    embed = output.last_hidden_state.squeeze(0)
+                    for sw, emb in zip(subwords, embed):
+                        emb = emb.detach().numpy()
+                        if sw not in self.embeddings:
+                            self.embeddings[sw] = [emb]
+                        else:
+                            self.embeddings[sw].append(emb)
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         for sw in self.embeddings:

@@ -1,6 +1,6 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
-from openTSNE import TSNE
+from sklearn.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
 import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests, numpy as np
 
@@ -89,48 +89,45 @@ class Embedding:
 
     def embed(self, text:str):
         if self.gpu:
-            # get subword tokens
-            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
-            encoded = {key: value.to(self.device) for key, value in encoded.items()}
-            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
-            # get embeddings
-            with torch.no_grad():
-                output = self.model(**encoded)
-                embeddings = output.last_hidden_state
-                for subword, embedding in zip(subwords, embeddings):
-                    for sw, emb in zip(subword, embedding):
-                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
-                            emb = emb.cpu().numpy()
-                            if sw not in self.embeddings:
-                                self.embeddings[sw] = emb
-                            else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-            del encoded, subwords, output, embeddings
-            torch.cuda.empty_cache()
+        # txt corresponds to a sentence
+            for txt in text:       
+                # get subword tokens
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                encoded = {key: value.to(self.device) for key, value in encoded.items()}
+                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                # get embeddings
+                with torch.no_grad():
+                    output = self.model(**encoded)
+                    embed = output.last_hidden_state.squeeze(0)
+                    for sw, emb in zip(subwords, embed):
+                        emb = emb.cpu().numpy()
+                        if sw not in self.embeddings:
+                            self.embeddings[sw] = [emb]
+                        else:
+                            self.embeddings[sw].append(emb)
 
         else:
-            # get subword tokens
-            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)
-            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][i]) for i in range(len(encoded['input_ids']))]
-            # get embeddings
-            with torch.no_grad():
-                output = self.model(**encoded)
-                embeddings = output.last_hidden_state
-                for subword, embedding in zip(subwords, embeddings):
-                    for sw, emb in zip(subword, embedding):
-                        if sw not in ['[CLS]', '[SEP]', '[PAD]']:
-                            emb = emb.detach().numpy()
-                            if sw not in self.embeddings:
-                                self.embeddings[sw] = emb
-                            else:
-                                self.embeddings[sw] = np.vstack((self.embeddings[sw], emb))
-            del encoded, subwords, output, embeddings
+            # txt corresponds to a sentence
+            for txt in self.text:
+                # get subword tokens
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                # get embeddings
+                with torch.no_grad():
+                    output = self.model(**encoded)
+                    embed = output.last_hidden_state.squeeze(0)
+                    for sw, emb in zip(subwords, embed):
+                        emb = emb.detach().numpy()
+                        if sw not in self.embeddings:
+                            self.embeddings[sw] = [emb]
+                        else:
+                            self.embeddings[sw].append(emb)
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         for sw in self.embeddings:
-            if len(self.embeddings[sw].shape) == 2 and self.embeddings[sw].shape[0] >= min_samples:
-                tsne = TSNE(n_job=-1)
-                self.embeddings[sw] = tsne.fit(self.embeddings[sw])
+            if len(self.embeddings[sw]) >= min_samples:
+                tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                self.embeddings[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file
@@ -185,7 +182,7 @@ class Cluster:
             from cuml.cluster import DBSCAN as cuDBSCAN
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb.shape) == 2 and emb.shape[0] >= self.min_emb:
+            if len(emb) >= self.min_emb:
                 e = eps
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)

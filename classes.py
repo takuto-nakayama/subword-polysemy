@@ -125,7 +125,7 @@ class Embedding:
 
     def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
         for sw in self.embeddings:
-            if len(self.embeddings[sw]) == 2 and len(self.embeddings[sw]) >= min_samples:
+            if len(self.embeddings[sw]) >= min_samples:
                 tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
                 self.embeddings[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
             
@@ -182,7 +182,7 @@ class Cluster:
             from cuml.cluster import DBSCAN as cuDBSCAN
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb) == 2 and len(emb) >= self.min_emb:
+            if len(emb) >= self.min_emb:
                 e = eps
                 # find the clusters the number of which is the greatest
                 best_dbscan = numpy.full(len(emb), -1)

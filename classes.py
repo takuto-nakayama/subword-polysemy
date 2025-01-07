@@ -81,11 +81,10 @@ class Embedding:
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
         self.gpu = gpu
-        if self.gpu:
-            # CPU -> GPU
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = self.model.to(self.device)
-            print(f"Using device: {self.device}")
+        # CPU -> GPU
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
+        print(f"Using device: {self.device}")
 
     def embed(self, text:str):
         if self.gpu:

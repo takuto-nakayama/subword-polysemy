@@ -6,7 +6,7 @@ import argparse, os, csv, time, requests, pandas as pd
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('language', type=str)
+    parser.add_argument('path', type=str)
     parser.add_argument('num', type=int)
     parser.add_argument('id', type=str)
     parser.add_argument('--gpu', action='store_false')
@@ -20,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_cluster', action='store_true')
     args = parser.parse_args()
 
-    language = args.language
+    path = args.path
     num = args.num
     id = args.id
     gpu = args.gpu
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     save_embedding = args.save_embedding
     save_cluster = args.save_cluster
 
-    codes = pd.read_csv('languages.csv')['ISO-code']
+    codes = pd.read_csv(path)['ISO-code']
 
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')

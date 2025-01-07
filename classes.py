@@ -129,40 +129,39 @@ class Embedding:
                 with h5py.File(path, 'r') as h:
                     cnt = len(h.keys())
                 with h5py.File(path, 'a') as h:
-                    g = h.create_group(name=f'{language}{cnt}')
+                    g = h.create_group(name=f'{language}-{cnt}')
                     for sw in self.embeddings:
                         if len(self.embeddings[sw]) >= min_emb:
                             tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
                             self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
-                        try:
-                            if sw == '.':
-                                g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
-                            elif sw == '/':
-                                g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
-                            else:
-                                g.create_dataset(name=sw, data=self.dict_tsne[sw])
-                        except:
-                            print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
-                            print(self.dict_tsne[sw])
-                            continue
+                            try:
+                                if sw == '.':
+                                    g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
+                                elif sw == '/':
+                                    g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
+                                else:
+                                    g.create_dataset(name=sw, data=self.dict_tsne[sw])
+                            except:
+                                print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                                print(self.dict_tsne[sw])
+                                continue
             else:
                 with h5py.File(path, 'w') as h:
-                    cnt = len(h.keys())
-                    g = h.create_group(name=f'{language}{cnt+1}')
+                    g = h.create_group(name=f'{language}-1')
                     for sw in self.embeddings:
                         if len(self.embeddings[sw]) >= min_emb:
                             tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
                             self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
-                        try:
-                            if sw == '.':
-                                h.create_dataset(name='\u2024', data=self.dict_tsne[sw])
-                            elif sw == '/':
-                                h.create_dataset(name='\u2044', data=self.dict_tsne[sw])
-                            else:
-                                h.create_dataset(name=sw, data=self.dict_tsne[sw])
-                        except:
-                            print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
-                            continue
+                            try:
+                                if sw == '.':
+                                    g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
+                                elif sw == '/':
+                                    g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
+                                else:
+                                    g.create_dataset(name=sw, data=self.dict_tsne[sw])
+                            except:
+                                print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                                continue
         else:
             for sw in self.embeddings:
                 if len(self.embeddings[sw]) >= min_emb:

@@ -64,7 +64,7 @@ if __name__ == '__main__':
                 continue
         list_title = wiki.list_title
         print(f'\ntSNE is processing...')
-        emb.tsne(min_emb, p_ratio, save_tsne, path=f'result/{id}/tsne-{id}/{language}.hdf5')
+        emb.tsne(min_emb, p_ratio, save_tsne, f'result/{id}/tsne-{id}/{language}.hdf5', language)
         time_emb = datetime.now() - start
         print(f'Text processnig is done ({paragraphs} ¶s, {len(list_title)} articles).')
         print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')

@@ -143,6 +143,7 @@ class Embedding:
                                 g.create_dataset(name=sw, data=self.dict_tsne[sw])
                         except:
                             print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                            print(self.dict_tsne[sw])
                             continue
             else:
                 with h5py.File(path, 'w') as h:

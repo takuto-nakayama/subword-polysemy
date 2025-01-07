@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--dif', default=0.5, type=float)
     parser.add_argument('--tsne', action='store_false')
     parser.add_argument('--p_ratio', default=0.3, type=float)
-    parser.add_argument('--save_embedding', action='store_true')
+    parser.add_argument('--save_tsne', action='store_false')
     parser.add_argument('--save_cluster', action='store_true')
     args = parser.parse_args()
 
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     dif = args.dif
     tsne = args.tsne
     p_ratio = args.p_ratio
-    save_embedding = args.save_embedding
+    save_tsne = args.save_tsne
     save_cluster = args.save_cluster
 
     codes = pd.read_csv(path)['ISO-code']
@@ -62,15 +62,13 @@ if __name__ == '__main__':
                 continue
         list_title = wiki.list_title
         print(f'\ntSNE is processing...')
-        emb.tsne(min_emb, p_ratio)
-        if save_embedding:
-            emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
+        emb.tsne(min_emb, p_ratio, save_tsne, path=f'result/{id}/tsne-{id}/{language}.hdf5')
         time_emb = datetime.now() - start
         print(f'Text processnig is done ({paragraphs} ¶s, {len(list_title)} articles).')
         print(f'Embedding is done ({len(emb.embeddings)} subwords). ({time_emb.seconds} seconds.)')
 
         start_clst =  datetime.now()
-        clst = Cluster(emb.embeddings, gpu=gpu, min_emb=min_emb, min_samples=min_samples)
+        clst = Cluster(emb.dict_tsne, gpu=gpu, min_emb=min_emb, min_samples=min_samples)
         clst.cluster(eps, dif)
         if save_cluster:
             clst.save_cluster(path=f'result/{id}/cluster-{id}.hdf5', name=language)

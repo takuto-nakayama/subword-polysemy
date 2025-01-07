@@ -123,50 +123,29 @@ class Embedding:
                         else:
                             self.embeddings[sw].append(emb)
 
-    def tsne(self, min_samples:int, p_ratio:float, n_components:int=2):
-        for sw in self.embeddings:
-            if len(self.embeddings[sw]) >= min_samples:
-                tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
-                self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
-            
-    def save_vector(self, path:str, name:str):
-        # identify the directory and the file
-        if '/' not in path:
-            hfile = path
-            hdir = os.listdir(os.getcwd())
-        else:
-            match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
-            hfile = match.group(1)[:-1][::-1]
-            hdir = os.listdir(match.group(2)[::-1])
-        # save vectors
-        if hfile not in hdir:
+    def tsne(self, min_emb:int, p_ratio:float, save_tsne:bool, path:str, n_components:int=2):
+        if save_tsne:
             with h5py.File(path, 'w') as h:
-                g = h.create_group(name=name)
-                for sw in self.dict_tsne:
+                for sw in self.embeddings:
+                    if len(self.embeddings[sw]) >= min_emb:
+                        tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                        self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
                     try:
                         if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
+                            h.create_dataset(name='\u2024', data=self.dict_tsne[sw])
                         elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
+                            h.create_dataset(name='\u2044', data=self.dict_tsne[sw])
                         else:
-                            g.create_dataset(name=sw, data=self.dict_tsne[sw])
+                            h.create_dataset(name=sw, data=self.dict_tsne[sw])
                     except:
                         print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                         continue
         else:
-            with h5py.File(path, 'a') as h:
-                g = h.create_group(name=name)
-                for sw in self.dict_tsne:
-                    try:
-                        if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
-                        elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
-                        else:
-                            g.create_dataset(name=sw, data=self.dict_tsne[sw])
-                    except:
-                        print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
-                        continue
+            for sw in self.embeddings:
+                if len(self.embeddings[sw]) >= min_emb:
+                    tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                    self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+
 
 class Cluster:
     def __init__(self, embeddings:numpy.ndarray, gpu:bool, min_emb:int, min_samples:int):
@@ -182,24 +161,23 @@ class Cluster:
             from cuml.cluster import DBSCAN as cuDBSCAN
         # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
-            if len(emb) >= self.min_emb:
-                e = eps
-                # find the clusters the number of which is the greatest
-                best_dbscan = numpy.full(len(emb), -1)
+            e = eps
+            # find the clusters the number of which is the greatest
+            best_dbscan = numpy.full(len(emb), -1)
+            if self.gpu:
+                dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
+            else:
+                dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
+            while max(dbscan) >= max(best_dbscan):
+                best_dbscan = dbscan
+                if len(best_dbscan)==numpy.sum(best_dbscan==0):
+                    break
+                e += dif
                 if self.gpu:
                     dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
                 else:
                     dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
-                while max(dbscan) >= max(best_dbscan):
-                    best_dbscan = dbscan
-                    if len(best_dbscan)==numpy.sum(best_dbscan==0):
-                        break
-                    e += dif
-                    if self.gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
-                    else:
-                        dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
-                self.dbscan[sw] = best_dbscan
+            self.dbscan[sw] = best_dbscan
     
     def save_cluster(self, path:str, name:str):
         # identify the directory and the file

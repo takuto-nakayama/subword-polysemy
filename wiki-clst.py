@@ -37,6 +37,8 @@ if __name__ == '__main__':
 
     if id not in os.listdir('result'):
         os.mkdir(f'result/{id}')
+    if save_tsne and f'tsne-{id}' not in os.listdir(f'result/{id}'):
+        os.mkdir(f'result/{id}/tsne-{id}')
     for language in codes:
         start = datetime.now()
         print(f'{language}: processing started at {start.time()}.')

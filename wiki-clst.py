@@ -62,7 +62,7 @@ if __name__ == '__main__':
                 continue
         list_title = wiki.list_title
         print(f'\ntSNE is processing...')
-        emb.tsne(min_samples, p_ratio)
+        emb.tsne(min_emb, p_ratio)
         if save_embedding:
             emb.save_vector(path=f'result/{id}/embedding-{id}.hdf5', name=f'{language}')
         time_emb = datetime.now() - start

@@ -2,7 +2,7 @@ from classes import WikipediaText, Embedding, Cluster
 from datetime import datetime
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
 
-import argparse, os, csv, time, requests, pandas as pd
+import argparse, os, csv, requests, time as time_module, pandas as pd
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -52,13 +52,13 @@ if __name__ == '__main__':
                 cnt += 1
                 print(f'\rText & Embedding: {cnt}/{num} articles.', end='')
             except (DisambiguationError, PageError, HTTPTimeoutError) as e:
-                time.sleep(1)
+                time_module.sleep(1)
                 continue
             except requests.exceptions.ConnectionError as e:
-                time.sleep(3)
+                time_module.sleep(3)
                 continue
             except:
-                time.sleep(1)
+                time_module.sleep(1)
                 continue
         list_title = wiki.list_title
         print(f'\ntSNE is processing...')

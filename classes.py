@@ -78,6 +78,7 @@ class WikipediaText:
 class Embedding:
     def __init__(self, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased', gpu:bool=True):
         self.embeddings = {}
+        self.dict_tsne = {}
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
         self.gpu = gpu
@@ -126,7 +127,7 @@ class Embedding:
         for sw in self.embeddings:
             if len(self.embeddings[sw]) >= min_samples:
                 tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
-                self.embeddings[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+                self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
             
     def save_vector(self, path:str, name:str):
         # identify the directory and the file
@@ -141,28 +142,28 @@ class Embedding:
         if hfile not in hdir:
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
-                for sw in self.embeddings:
+                for sw in self.dict_tsne:
                     try:
                         if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
+                            g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
                         elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
+                            g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
                         else:
-                            g.create_dataset(name=sw, data=self.embeddings[sw])
+                            g.create_dataset(name=sw, data=self.dict_tsne[sw])
                     except:
                         print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                         continue
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)
-                for sw in self.embeddings:
+                for sw in self.dict_tsne:
                     try:
                         if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
+                            g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
                         elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
+                            g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
                         else:
-                            g.create_dataset(name=sw, data=self.embeddings[sw])
+                            g.create_dataset(name=sw, data=self.dict_tsne[sw])
                     except:
                         print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                         continue

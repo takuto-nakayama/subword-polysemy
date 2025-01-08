@@ -129,7 +129,7 @@ class Embedding:
                 with h5py.File(path, 'r') as h:
                     cnt = len(h.keys())
                 with h5py.File(path, 'a') as h:
-                    g = h.create_group(name=f'{language}-{cnt}')
+                    g = h.create_group(name=f'{language}-{cnt+1}')
                     for sw in self.embeddings:
                         if len(self.embeddings[sw]) >= min_emb:
                             tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))

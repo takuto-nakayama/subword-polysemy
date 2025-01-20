@@ -2,78 +2,33 @@ from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
 from sklearn.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
-import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests, numpy as np
+import h5py
+import math
+import os
+import re
+import statistics
+import torch
+import wikipedia
+import numpy as np
 
-class Dataset:
-    def __init__(self, path:str):
-        # path of a hdf5 file
-        self.path = path
-        # path is divided into file and directory name
-        if '/' not in self.path:
-            self.hfile = self.path
-            self.hdir = os.listdir(os.getcwd())
-        else:
-            match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
-            self.hfile = match.group(1)[:-1][:-1]
-            self.hdir = match.group(2)[::-1]
-        # error messages and others
-        if self.hfile not in os.listdir(self.hdir):
-            print('Error: No such file in the directory')
-        if self.hfile[self.hfile.index('.'):] != '.hdf5':
-            print('Error: This class can cope with only ".hdf5"')
-
-    def tree(self):
-        with h5py.File(self.path, 'r') as h:
-            print("HDF5 File Structure:")
-            h.visititems(lambda name, obj: print(
-                f"{'  ' * name.count('/')}[{'Group' if isinstance(obj, h5py.Group) else 'Dataset'}] {name}" +
-                    (f", shape: {obj.shape}, dtype: {obj.dtype}" if isinstance(obj, h5py.Dataset) else "")
-            ))
-
-    def keys(self, key:str='/'):
-        try:
-            with h5py.File(self.path, 'r') as h:
-                return list(h[key].keys())
-        except KeyError:
-            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
-        except Exception as e:
-            print(f'Error: {e}')            
-    
-    def dataset(self, key:str='/'):
-        try:
-            with h5py.File(self.path, 'r') as h:
-                return numpy.array([i.decode('utf-8') for i in h[key][:]])
-        except KeyError:
-            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
-        except Exception as e:
-            print(f'Error: {e}')            
-
-    def write(self, name:str=None, data:numpy.ndarray=None):
-        if name and data:
-            with h5py.File(self.path, 'a') as h:
-                h.create_dataset(name=name, data=data)
-        elif name:
-            with h5py.File(self.path, 'a') as h:
-                h.create_group(name=name)
-        elif data:
-            print('Error: Group name or dataset name is required')
-        else:
-            print('Error: Something is wrong in arguments')
 
 class WikipediaText:
     def __init__(self, language:str):
         self.list_title = []
         wikipedia.set_lang(language)
 
+
     def random_text(self):
         random_title = wikipedia.random()
         page = wikipedia.page(random_title)
         text = page.content
-        text = text.split('\n') # paragraph corresponds to a line
-        text = [x for x in text if x != '' and ' '] # remove blanks
-        text = [x for x in text if '== ' not in x] # remove section titles
+        text = text.split('\n')  ## paragraph = line
+        text = [x for x in text if x != '' and ' ']  ## remove blanks
+        text = [x for x in text if '== ' not in x]  ## remove section titles
         self.list_title.append(page.title)
         return text
+
+
 
 class Embedding:
     def __init__(self, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased', gpu:bool=True):
@@ -82,22 +37,25 @@ class Embedding:
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
         self.gpu = gpu
+
         # CPU -> GPU
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         print(f"Using device: {self.device}")
 
+
     def embed(self, text:str):
+        # embedding using GPU
         if self.gpu:
-        # txt corresponds to a sentence
-            for txt in text:       
-                # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+            for txt in text:  ## txt = paragraph
+                # tokenize the text
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
                 encoded = {key: value.to(self.device) for key, value in encoded.items()}
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                
                 # get embeddings
                 with torch.no_grad():
-                    output = self.model(**encoded)
+                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
                         emb = emb.cpu().numpy()
@@ -106,15 +64,16 @@ class Embedding:
                         else:
                             self.embeddings[sw].append(emb)
 
+        # embedding using CPU
         else:
-            # txt corresponds to a sentence
-            for txt in self.text:
+            for txt in self.text:  ## txt = paragraph
                 # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+
                 # get embeddings
                 with torch.no_grad():
-                    output = self.model(**encoded)
+                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
                         emb = emb.detach().numpy()
@@ -123,7 +82,9 @@ class Embedding:
                         else:
                             self.embeddings[sw].append(emb)
 
+    # ~~~20250120 added comment-outs. functions below will be done the next day!~~~
     def tsne(self, min_emb:int, p_ratio:float, save_tsne:bool, path:str, language:str,n_components:int=2):
+        # tsne with saving the result
         if save_tsne:
             if os.path.isfile(path):
                 with h5py.File(path, 'r') as h:
@@ -162,11 +123,14 @@ class Embedding:
                             except:
                                 print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                                 continue
+        
+        # tsne without saving the result
         else:
             for sw in self.embeddings:
                 if len(self.embeddings[sw]) >= min_emb:
                     tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
                     self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+
 
 
 class Cluster:
@@ -211,7 +175,7 @@ class Cluster:
             hfile = match.group(1)[::-1][:-1]
             hdir = match.group(2)[::-1]
         # save clusters
-        if hfile not in os.listdir(hdir):
+        if not os.path.exists(hdir):
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:

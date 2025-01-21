@@ -237,3 +237,4 @@ class Cluster:
         
         # return the average entropy
         return statistics.mean(self.entropy.values())
+    

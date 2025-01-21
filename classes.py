@@ -82,16 +82,13 @@ class Embedding:
                         else:
                             self.embeddings[sw].append(emb)
 
-    
+    # ~~~20250120 added comment-outs. functions below will be done the next day!~~~
     def tsne(self, min_emb:int, p_ratio:float, save_tsne:bool, path:str, language:str,n_components:int=2):
-        # tsne with saving the result -> .hdf5
+        # tsne with saving the result
         if save_tsne:
-            # the file of the path exists
             if os.path.isfile(path):
                 with h5py.File(path, 'r') as h:
-                    cnt = len(h.keys())  ## cnt = the num of exsited results
-                
-                # save the embeddings
+                    cnt = len(h.keys())
                 with h5py.File(path, 'a') as h:
                     g = h.create_group(name=f'{language}-{cnt+1}')
                     for sw in self.embeddings:
@@ -109,9 +106,6 @@ class Embedding:
                                 print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                                 print(self.dict_tsne[sw])
                                 continue
-            
-            # the file of the path does not exist
-            # save the embeddings
             else:
                 with h5py.File(path, 'w') as h:
                     g = h.create_group(name=f'{language}-1')
@@ -130,7 +124,7 @@ class Embedding:
                                 print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
                                 continue
         
-        # tsne without saving the result -> just update self.embeddings
+        # tsne without saving the result
         else:
             for sw in self.embeddings:
                 if len(self.embeddings[sw]) >= min_emb:
@@ -149,20 +143,17 @@ class Cluster:
         self.min_samples = min_samples
 
     def cluster(self, eps:float, dif:float):
-        if self.gpu:  ## DBSCAN with GPU
+        if self.gpu:
             from cuml.cluster import DBSCAN as cuDBSCAN
-
+        # emb corresponds to a set of embeddings of each subword
         for sw, emb in self.embeddings.items():
             e = eps
+            # find the clusters the number of which is the greatest
             best_dbscan = np.full(len(emb), -1)
-
-            # the first attempt of DBSCAN
-            if self.gpu:  ## DBSCAN with GPU
+            if self.gpu:
                 dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
-            else:  ## DBSCAN with CPU
+            else:
                 dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
-            
-            # after the second attempt of DBSCAN
             while max(dbscan) >= max(best_dbscan):
                 best_dbscan = dbscan
                 if len(best_dbscan)==np.sum(best_dbscan==0):
@@ -172,10 +163,8 @@ class Cluster:
                     dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
                 else:
                     dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
-            
-            self.dbscan[sw] = best_dbscan  ## the best DBSCAN clusters
+            self.dbscan[sw] = best_dbscan
     
-
     def save_cluster(self, path:str, name:str):
         # identify the directory and the file
         if '/' not in path:
@@ -185,9 +174,7 @@ class Cluster:
             match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
             hfile = match.group(1)[::-1][:-1]
             hdir = match.group(2)[::-1]
-        
         # save clusters
-        # the file of the path exists
         if not os.path.exists(hdir):
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
@@ -202,8 +189,6 @@ class Cluster:
                     except:
                         print(f'SavingClusterError: subword "{sw}". Skipping.')
                         continue
-        
-        # the file of the path does not exist
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)
@@ -219,21 +204,17 @@ class Cluster:
                         print(f'SavingClusterError: subword "{sw}". Skipping.')
                         continue
 
-
     def entropy(self):
-        self.entropy = {}  ## {subword: entropy}
-
+        self.entropy = {}
+        # dbs corresponds to clusters for each subword
         for sw, dbs in self.dbscan.items():
-            list_num = []  ## how many embs are in each cluster
-            num_minus = np.sum(dbs==-1)  ## the num of outliers
-
-            # count the num of embs in each cluster
+            list_num = []
+            num_minus = np.sum(dbs==-1)
+            # list_num contains the number of how many are in each cluster
             for i in range(0, max(dbs)+1):
                 list_num.append(np.sum(dbs==i))
-            
-            # calculate the entropy of each subword
+            # list_entropy contains the entropy of each subword
             for i in list_num:
                 self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)
-        
-        # return the average entropy
+        # the mean of the entropies is the average entropy of each subword in a language
         return statistics.mean(self.entropy.values())

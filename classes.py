@@ -58,7 +58,7 @@ class Embedding:
                     output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
-                        emb = emb.cpu().numpy()
+                        emb = emb.cpu().np()
                         if sw not in self.embeddings:
                             self.embeddings[sw] = [emb]
                         else:
@@ -76,7 +76,7 @@ class Embedding:
                     output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
-                        emb = emb.detach().numpy()
+                        emb = emb.detach().np()
                         if sw not in self.embeddings:
                             self.embeddings[sw] = [emb]
                         else:
@@ -134,7 +134,7 @@ class Embedding:
 
 
 class Cluster:
-    def __init__(self, embeddings:numpy.ndarray, gpu:bool, min_emb:int, min_samples:int):
+    def __init__(self, embeddings:np.ndarray, gpu:bool, min_emb:int, min_samples:int):
         self.dbscan = {}
         self.entropies = {}
         self.embeddings = embeddings
@@ -149,14 +149,14 @@ class Cluster:
         for sw, emb in self.embeddings.items():
             e = eps
             # find the clusters the number of which is the greatest
-            best_dbscan = numpy.full(len(emb), -1)
+            best_dbscan = np.full(len(emb), -1)
             if self.gpu:
                 dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
             else:
                 dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
             while max(dbscan) >= max(best_dbscan):
                 best_dbscan = dbscan
-                if len(best_dbscan)==numpy.sum(best_dbscan==0):
+                if len(best_dbscan)==np.sum(best_dbscan==0):
                     break
                 e += dif
                 if self.gpu:
@@ -209,10 +209,10 @@ class Cluster:
         # dbs corresponds to clusters for each subword
         for sw, dbs in self.dbscan.items():
             list_num = []
-            num_minus = numpy.sum(dbs==-1)
+            num_minus = np.sum(dbs==-1)
             # list_num contains the number of how many are in each cluster
             for i in range(0, max(dbs)+1):
-                list_num.append(numpy.sum(dbs==i))
+                list_num.append(np.sum(dbs==i))
             # list_entropy contains the entropy of each subword
             for i in list_num:
                 self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)

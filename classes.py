@@ -218,3 +218,4 @@ class Cluster:
                 self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)
         # the mean of the entropies is the average entropy of each subword in a language
         return statistics.mean(self.entropy.values())
+    

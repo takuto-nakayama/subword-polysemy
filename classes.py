@@ -1,104 +1,61 @@
 from transformers import BertTokenizer, BertModel
 from sklearn.cluster import DBSCAN
-from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from wikipedia.exceptions import DisambiguationError, PageError, HTTPTimeoutError
-import os, h5py, re, numpy, torch, math, statistics, wikipedia, time, requests
+import h5py
+import math
+import os
+import re
+import statistics
+import torch
+import wikipedia
+import numpy as np
 
-class Dataset:
-    def __init__(self, path:str):
-        # path of a hdf5 file
-        self.path = path
-        # path is divided into file and directory name
-        if '/' not in self.path:
-            self.hfile = self.path
-            self.hdir = os.listdir(os.getcwd())
-        else:
-            match = re.search(r'(.+?\..+?/)(.+)', self.path[::-1])
-            self.hfile = match.group(1)[:-1][:-1]
-            self.hdir = match.group(2)[::-1]
-        # error messages and others
-        if self.hfile not in os.listdir(self.hdir):
-            print('Error: No such file in the directory')
-        if self.hfile[self.hfile.index('.'):] != '.hdf5':
-            print('Error: This class can cope with only ".hdf5"')
-
-    def tree(self):
-        with h5py.File(self.path, 'r') as h:
-            print("HDF5 File Structure:")
-            h.visititems(lambda name, obj: print(
-                f"{'  ' * name.count('/')}[{'Group' if isinstance(obj, h5py.Group) else 'Dataset'}] {name}" +
-                    (f", shape: {obj.shape}, dtype: {obj.dtype}" if isinstance(obj, h5py.Dataset) else "")
-            ))
-
-    def keys(self, key:str='/'):
-        try:
-            with h5py.File(self.path, 'r') as h:
-                return list(h[key].keys())
-        except KeyError:
-            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
-        except Exception as e:
-            print(f'Error: {e}')            
-    
-    def dataset(self, key:str='/'):
-        try:
-            with h5py.File(self.path, 'r') as h:
-                return numpy.array([i.decode('utf-8') for i in h[key][:]])
-        except KeyError:
-            print(f'Key Error: The key "{key}" does not exist in the HDF5 file.')
-        except Exception as e:
-            print(f'Error: {e}')            
-
-    def write(self, name:str=None, data:numpy.ndarray=None):
-        if name and data:
-            with h5py.File(self.path, 'a') as h:
-                h.create_dataset(name=name, data=data)
-        elif name:
-            with h5py.File(self.path, 'a') as h:
-                h.create_group(name=name)
-        elif data:
-            print('Error: Group name or dataset name is required')
-        else:
-            print('Error: Something is wrong in arguments')
 
 class WikipediaText:
     def __init__(self, language:str):
         self.list_title = []
         wikipedia.set_lang(language)
 
+
     def random_text(self):
         random_title = wikipedia.random()
         page = wikipedia.page(random_title)
         text = page.content
-        text = text.split('\n') # paragraph corresponds to a line
-        text = [x for x in text if x != '' and ' '] # remove blanks
-        text = [x for x in text if '== ' not in x] # remove section titles
+        text = text.split('\n')  ## paragraph = line
+        text = [x for x in text if x != '' and ' ']  ## remove blanks
+        text = [x for x in text if '== ' not in x]  ## remove section titles
         self.list_title.append(page.title)
         return text
+
 
 
 class Embedding:
     def __init__(self, model:str='bert-base-multilingual-cased', tokenizer:str='bert-base-multilingual-cased', gpu:bool=True):
         self.embeddings = {}
+        self.dict_tsne = {}
         self.model = BertModel.from_pretrained(model)
         self.tokenizer = BertTokenizer.from_pretrained(tokenizer)
         self.gpu = gpu
-        if self.gpu:
-            # CPU -> GPU
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.model = self.model.to(self.device)
-            print(f"Using device: {self.device}")
+
+        # CPU -> GPU
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
+        print(f"Using device: {self.device}")
+
 
     def embed(self, text:str):
+        # embedding using GPU
         if self.gpu:
-            # txt corresponds to a sentence
-            for txt in text:       
-                # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+            for txt in text:  ## txt = paragraph
+                # tokenize the text
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
                 encoded = {key: value.to(self.device) for key, value in encoded.items()}
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+                
                 # get embeddings
                 with torch.no_grad():
-                    output = self.model(**encoded)
+                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
                         emb = emb.cpu().numpy()
@@ -106,15 +63,17 @@ class Embedding:
                             self.embeddings[sw] = [emb]
                         else:
                             self.embeddings[sw].append(emb)
+
+        # embedding using CPU
         else:
-            # txt corresponds to a sentence
-            for txt in self.text:
+            for txt in self.text:  ## txt = paragraph
                 # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)
+                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+
                 # get embeddings
                 with torch.no_grad():
-                    output = self.model(**encoded)
+                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
                         emb = emb.detach().numpy()
@@ -122,84 +81,101 @@ class Embedding:
                             self.embeddings[sw] = [emb]
                         else:
                             self.embeddings[sw].append(emb)
+
     
-    def save_vector(self, path:str, name:str):
-        # identify the directory and the file
-        if '/' not in path:
-            hfile = path
-            hdir = os.listdir(os.getcwd())
+    def tsne(self, min_emb:int, p_ratio:float, save_tsne:bool, path:str, language:str,n_components:int=2):
+        # tsne with saving the result -> .hdf5
+        if save_tsne:
+            # the file of the path exists
+            if os.path.isfile(path):
+                with h5py.File(path, 'r') as h:
+                    cnt = len(h.keys())  ## cnt = the num of exsited results
+                
+                # save the embeddings
+                with h5py.File(path, 'a') as h:
+                    g = h.create_group(name=f'{language}-{cnt+1}')
+                    for sw in self.embeddings:
+                        if len(self.embeddings[sw]) >= min_emb:
+                            tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                            self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+                            try:
+                                if sw == '.':
+                                    g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
+                                elif sw == '/':
+                                    g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
+                                else:
+                                    g.create_dataset(name=sw, data=self.dict_tsne[sw])
+                            except:
+                                print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                                print(self.dict_tsne[sw])
+                                continue
+            
+            # the file of the path does not exist
+            # save the embeddings
+            else:
+                with h5py.File(path, 'w') as h:
+                    g = h.create_group(name=f'{language}-1')
+                    for sw in self.embeddings:
+                        if len(self.embeddings[sw]) >= min_emb:
+                            tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                            self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+                            try:
+                                if sw == '.':
+                                    g.create_dataset(name='\u2024', data=self.dict_tsne[sw])
+                                elif sw == '/':
+                                    g.create_dataset(name='\u2044', data=self.dict_tsne[sw])
+                                else:
+                                    g.create_dataset(name=sw, data=self.dict_tsne[sw])
+                            except:
+                                print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
+                                continue
+        
+        # tsne without saving the result -> just update self.embeddings
         else:
-            match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
-            hfile = match.group(1)[:-1][::-1]
-            hdir = os.listdir(match.group(2)[::-1])
-        # save vectors
-        if hfile not in hdir:
-            with h5py.File(path, 'w') as h:
-                g = h.create_group(name=name)
-                for sw in self.embeddings:
-                    try:
-                        if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
-                        elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
-                        else:
-                            g.create_dataset(name=sw, data=self.embeddings[sw])
-                    except:
-                        print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
-                        continue
-        else:
-            with h5py.File(path, 'a') as h:
-                g = h.create_group(name=name)
-                for sw in self.embeddings:
-                    try:
-                        if sw == '.':
-                            g.create_dataset(name='\u2024', data=self.embeddings[sw])
-                        elif sw == '/':
-                            g.create_dataset(name='\u2044', data=self.embeddings[sw])
-                        else:
-                            g.create_dataset(name=sw, data=self.embeddings[sw])
-                    except:
-                        print(f'SavingEmbeddingError: subword "{sw}". Skipping.')
-                        continue
+            for sw in self.embeddings:
+                if len(self.embeddings[sw]) >= min_emb:
+                    tsne = TSNE(n_components=n_components, perplexity=(len(self.embeddings[sw])*p_ratio))
+                    self.dict_tsne[sw] = tsne.fit_transform(np.array(self.embeddings[sw]))
+
+
 
 class Cluster:
-    def __init__(self, embeddings=numpy.ndarray, gpu:bool=True):
+    def __init__(self, embeddings:np.ndarray, gpu:bool, min_emb:int, min_samples:int):
         self.dbscan = {}
         self.entropies = {}
         self.embeddings = embeddings
         self.gpu = gpu
+        self.min_emb = min_emb
+        self.min_samples = min_samples
 
-    def cluster(self, min=2, pca=False, gpu=True, eps=0.5, dif=0.5, brake=10):
-        if self.gpu:
+    def cluster(self, eps:float, dif:float):
+        if self.gpu:  ## DBSCAN with GPU
             from cuml.cluster import DBSCAN as cuDBSCAN
-            import cuml
-        # emb corresponds to a set of embeddings of each subword
+
         for sw, emb in self.embeddings.items():
-            if len(emb) >= min:
-                e = eps
-                # pca version
-                if pca:
-                    pca = PCA()
-                    emb = pca.fit_transform(emb)
-                    index = numpy.where(numpy.cumsum(pca.explained_variance_ratio_) >= 0.9)[0][0] + 1
-                    emb = emb[:index]
-                # find the clusters the number of which is the greatest
-                best_dbscan = numpy.full(len(emb), -1)
+            e = eps
+            best_dbscan = np.full(len(emb), -1)
+
+            # the first attempt of DBSCAN
+            if self.gpu:  ## DBSCAN with GPU
+                dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
+            else:  ## DBSCAN with CPU
+                dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
+            
+            # after the second attempt of DBSCAN
+            while max(dbscan) >= max(best_dbscan):
+                best_dbscan = dbscan
+                if len(best_dbscan)==np.sum(best_dbscan==0):
+                    break
+                e += dif
                 if self.gpu:
-                    dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
+                    dbscan = cuDBSCAN(eps=e, min_samples=self.min_samples).fit_predict(emb)
                 else:
-                    dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
-                while max(dbscan) >= max(best_dbscan):
-                    best_dbscan = dbscan
-                    if len(best_dbscan)==numpy.sum(best_dbscan==0):
-                        break
-                    e += dif
-                    if self.gpu:
-                        dbscan = cuDBSCAN(eps=e, min_samples=2).fit_predict(numpy.array(emb))
-                    else:
-                        dbscan = DBSCAN(eps=e, min_samples=2, metric='euclidean').fit_predict(emb)
-                self.dbscan[sw] = best_dbscan
+                    dbscan = DBSCAN(eps=e, min_samples=self.min_samples, metric='euclidean').fit_predict(emb)
+            
+            self.dbscan[sw] = best_dbscan  ## the best DBSCAN clusters
     
+
     def save_cluster(self, path:str, name:str):
         # identify the directory and the file
         if '/' not in path:
@@ -209,8 +185,10 @@ class Cluster:
             match = re.search(r'(.+?\..+?/)(.+)', path[::-1])
             hfile = match.group(1)[::-1][:-1]
             hdir = match.group(2)[::-1]
+        
         # save clusters
-        if hfile not in os.listdir(hdir):
+        # the file of the path exists
+        if not os.path.exists(hdir):
             with h5py.File(path, 'w') as h:
                 g = h.create_group(name=name)
                 for sw in self.dbscan:
@@ -224,6 +202,8 @@ class Cluster:
                     except:
                         print(f'SavingClusterError: subword "{sw}". Skipping.')
                         continue
+        
+        # the file of the path does not exist
         else:
             with h5py.File(path, 'a') as h:
                 g = h.create_group(name=name)
@@ -239,17 +219,22 @@ class Cluster:
                         print(f'SavingClusterError: subword "{sw}". Skipping.')
                         continue
 
+
     def entropy(self):
-        self.entropy = {}
-        # dbs corresponds to clusters for each subword
+        self.entropy = {}  ## {subword: entropy}
+
         for sw, dbs in self.dbscan.items():
-            list_num = []
-            num_minus = numpy.sum(dbs==-1)
-            # list_num contains the number of how many are in each cluster
+            list_num = []  ## how many embs are in each cluster
+            num_minus = np.sum(dbs==-1)  ## the num of outliers
+
+            # count the num of embs in each cluster
             for i in range(0, max(dbs)+1):
-                list_num.append(numpy.sum(dbs==i))
-            # list_entropy contains the entropy of each subword
+                list_num.append(np.sum(dbs==i))
+            
+            # calculate the entropy of each subword
             for i in list_num:
                 self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)
-        # the mean of the entropies is the average entropy of each subword in a language
+        
+        # return the average entropy
         return statistics.mean(self.entropy.values())
+    

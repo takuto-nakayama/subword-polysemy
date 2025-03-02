@@ -66,7 +66,7 @@ class Embedding:
 
         # embedding using CPU
         else:
-            for txt in self.text:  ## txt = paragraph
+            for txt in text:  ## txt = paragraph
                 # get subword tokens
                 encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
                 subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])

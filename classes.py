@@ -58,7 +58,7 @@ class Embedding:
                     output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
-                        emb = emb.cpu().np()
+                        emb = emb.cpu().numpy()
                         if sw not in self.embeddings:
                             self.embeddings[sw] = [emb]
                         else:
@@ -76,7 +76,7 @@ class Embedding:
                     output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
                     embed = output.last_hidden_state.squeeze(0)
                     for sw, emb in zip(subwords, embed):
-                        emb = emb.detach().np()
+                        emb = emb.detach().numpy()
                         if sw not in self.embeddings:
                             self.embeddings[sw] = [emb]
                         else:

@@ -47,40 +47,42 @@ class Embedding:
     def embed(self, text:str):
         # embedding using GPU
         if self.gpu:
-            for txt in text:  ## txt = paragraph
-                # tokenize the text
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
-                encoded = {key: value.to(self.device) for key, value in encoded.items()}
-                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+            # tokenize the text
+            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
+            encoded = {key: value.to(self.device) for key, value in encoded.items()}
+            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][_]) for _ in range(len(text))]
                 
-                # get embeddings
-                with torch.no_grad():
-                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
-                    embed = output.last_hidden_state.squeeze(0)
-                    for sw, emb in zip(subwords, embed):
-                        emb = emb.cpu().numpy()
-                        if sw not in self.embeddings:
-                            self.embeddings[sw] = [emb]
-                        else:
-                            self.embeddings[sw].append(emb)
+            # get embeddings
+            with torch.no_grad():
+                output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
+                embed = output.last_hidden_state.squeeze(0)
+                for _ in range(len(text)):
+                    for sw, emb in zip(subwords[_], embed[_]):
+                        if sw not in ['[CLS]', '[SEP]', '[PAD]', '[UNK]', '[MASK]']:
+                            emb = emb.cpu().numpy()
+                            if sw not in self.embeddings:
+                                self.embeddings[sw] = [emb]
+                            else:
+                                self.embeddings[sw].append(emb)
 
         # embedding using CPU
         else:
-            for txt in text:  ## txt = paragraph
-                # get subword tokens
-                encoded = self.tokenizer(txt, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
-                subwords = self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][0][1:-1])
+            # get subword tokens
+            encoded = self.tokenizer(text, return_tensors='pt', truncation=True, padding=True)  ## encoded = dict_keys(['input_ids', 'token_type_ids', 'attention_mask'])
+            subwords = [self.tokenizer.convert_ids_to_tokens(encoded['input_ids'][_][1:-1]) for _ in range(len(text))]
 
-                # get embeddings
-                with torch.no_grad():
-                    output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
-                    embed = output.last_hidden_state.squeeze(0)
-                    for sw, emb in zip(subwords, embed):
-                        emb = emb.detach().numpy()
-                        if sw not in self.embeddings:
-                            self.embeddings[sw] = [emb]
-                        else:
-                            self.embeddings[sw].append(emb)
+            # get embeddings
+            with torch.no_grad():
+                output = self.model(**encoded)  ## output = dict_keys(['last_hidden_state', 'pooler_output'])
+                embed = output.last_hidden_state.squeeze(0)
+                for _ in range(len(text)):
+                    for sw, emb in zip(subwords[_], embed[_]):
+                        if sw not in ['[CLS]', '[SEP]', '[PAD]', '[UNK]', '[MASK]']:
+                            emb = emb.detach().numpy()
+                            if sw not in self.embeddings:
+                                self.embeddings[sw] = [emb]
+                            else:
+                                self.embeddings[sw].append(emb)
 
     
     def tsne(self, min_emb:int, p_ratio:float, save_tsne:bool, path:str, language:str,n_components:int=2):
@@ -228,12 +230,12 @@ class Cluster:
             num_minus = np.sum(dbs==-1)  ## the num of outliers
 
             # count the num of embs in each cluster
-            for i in range(0, max(dbs)+1):
-                list_num.append(np.sum(dbs==i))
+            for _ in range(0, max(dbs)+1):
+                list_num.append(np.sum(dbs==_))
             
             # calculate the entropy of each subword
-            for i in list_num:
-                self.entropy[sw] = -(i / (len(dbs)-num_minus)) * math.log(i / (len(dbs)-num_minus), 2)
+            for _ in list_num:
+                self.entropy[sw] = -(_ / (len(dbs)-num_minus)) * math.log(_ / (len(dbs)-num_minus), 2)
         
         # return the average entropy
         return statistics.mean(self.entropy.values())
